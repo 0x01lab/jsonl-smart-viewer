@@ -28,12 +28,14 @@ const api = {
       offset += CHUNK_SIZE
     }
 
-    return engine.finalize_scan() as WasmSchemaResult
+    // JSON round-trip to ensure plain JS objects that survive structured cloning
+    return JSON.parse(JSON.stringify(engine.finalize_scan())) as WasmSchemaResult
   },
 
   getRows(start: number, end: number): WasmRow[] {
     if (!engine) throw new Error('Engine not initialized')
-    return engine.get_rows(start, end) as WasmRow[]
+    // JSON round-trip to ensure plain JS objects that survive structured cloning
+    return JSON.parse(JSON.stringify(engine.get_rows(start, end))) as WasmRow[]
   },
 }
 
