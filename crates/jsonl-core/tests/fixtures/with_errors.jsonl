@@ -1,0 +1,6 @@
+{"id":1,"name":"Alice"}
+{invalid json
+{"id":3,"name":"Charlie"}
+{"id":4}
+broken { again
+{"id":6,"name":"Frank"}
