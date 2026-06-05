@@ -1,0 +1,33 @@
+{
+  "name": "app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.120.17",
+    "@tanstack/react-start": "^1.120.17",
+    "@tanstack/react-table": "^8.21.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "comlink": "^4.4.2",
+    "zod": "^3.25.42"
+  },
+  "devDependencies": {
+    "@tanstack/react-router-devtools": "^1.120.17",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.5.2",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.3"
+  }
+}
