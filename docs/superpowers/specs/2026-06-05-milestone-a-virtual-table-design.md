@@ -107,13 +107,13 @@ app/src/
 URL search params schema：
 
 ```
-?sortBy=id:asc,name:desc&filter.age=>25&filter.name=alice
+?sortBy=id:asc,name:desc&filter=age%3E25&filter=name%3Aalice
  &cols=id,name,email&scrollOffset=3200
 ```
 
 Zod 定义：
 - `sortBy`: `z.string().optional()` — "col:asc" 或多列 "col1:asc,col2:desc"
-- `filter`: `z.record(z.string()).optional()` — `{ col: filterValue }`
+- `filter`: `z.record(z.string()).optional()` — `{ col: "op:value" }`，如 `age: ">25"`, `name: ":alice"`（冒号分隔操作符和值）
 - `cols`: `z.string().optional()` — 可见列，逗号分隔
 - `scrollOffset`: `z.number().optional()` — 虚拟滚动位置
 
@@ -198,7 +198,7 @@ Zod 定义：
 
 虚拟滚动 + 行数据获取。
 
-- queryKey: `['rows', start, end]`
+- queryKey: `['rows', fileId, start, end]`（fileId 为文件名+大小的哈希，避免多文件缓存冲突）
 - staleTime: Infinity（文件不变数据不变）
 - gcTime: 5 分钟（不可见区缓存自动回收）
 - 预取：当前范围 ± 5 行
