@@ -34,8 +34,18 @@ const api = {
 
   getRows(start: number, end: number): WasmRow[] {
     if (!engine) throw new Error('Engine not initialized')
+    const raw = engine.get_rows(start, end)
+    // Debug: inspect raw WASM output
+    console.log('[WORKER] get_rows raw type:', typeof raw, Array.isArray(raw) ? `array[${raw.length}]` : '')
+    if (Array.isArray(raw) && raw.length > 0) {
+      const first = raw[0] as any
+      console.log('[WORKER] first row keys:', Object.keys(first).join(', '))
+      console.log('[WORKER] first row.data type:', typeof first.data, first.data ? JSON.stringify(first.data).slice(0, 200) : 'null/undefined')
+      console.log('[WORKER] first row.error:', first.error)
+      console.log('[WORKER] first row.index:', first.index)
+    }
     // JSON round-trip to ensure plain JS objects that survive structured cloning
-    return JSON.parse(JSON.stringify(engine.get_rows(start, end))) as WasmRow[]
+    return JSON.parse(JSON.stringify(raw)) as WasmRow[]
   },
 }
 
