@@ -168,7 +168,11 @@ impl JsonlEngine {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self;
 
+    /// 设置文件总大小 (用于进度计算)
+    pub fn set_total_size(&mut self, size: u64);
+
     /// 流式喂入数据块，返回当前扫描进度 (0.0 ~ 1.0)
+    /// 进度 = bytes_fed / total_size
     pub fn feed_chunk(&mut self, chunk: &[u8]) -> f64;
 
     /// 扫描完成，获取 Schema 和总行数
@@ -241,28 +245,49 @@ const viewerSearchSchema = z.object({
 ### 5.3 Worker 通信协议
 
 ```typescript
-// 主线程 → Worker
+// ─── 主线程 → Worker ───
 type WorkerRequest =
-  | { type: 'LOAD_FILE'; file: File }
-  | { type: 'LOAD_CHUNK'; chunk: ArrayBuffer; offset: number; isLast: boolean }
+  | { type: 'INIT'; fileSize: number }       // 通知 Worker 文件总大小 (用于进度计算)
+  | { type: 'LOAD_FILE'; file: File }        // 传入 File 引用, Worker 内部自行 stream 分块
   | { type: 'GET_ROWS'; start: number; end: number }
   | { type: 'SEARCH'; query: string }
   | { type: 'DESTROY' }
 
-// Worker → 主线程
+// ─── Worker → 主线程 ───
 type WorkerResponse =
   | { type: 'SCAN_PROGRESS'; progress: number; rowsScanned: number }
   | { type: 'SCAN_COMPLETE'; schema: SchemaDef; totalRows: number; errorRows: number }
   | { type: 'ROWS_DATA'; rows: FlatRow[]; start: number; end: number }
   | { type: 'SEARCH_RESULT'; matchingIndices: number[] }
   | { type: 'ERROR'; message: string }
+
+// ─── 共享类型定义 ───
+interface SchemaDef {
+  columns: ColumnDefDTO[]
+  totalRows: number
+  errorRows: number
+}
+
+interface ColumnDefDTO {
+  key: string              // "address.city"
+  depth: number            // 嵌套深度 (0 = 顶层)
+  inferredType: ValueType  // 'string' | 'number' | 'boolean' | 'object' | 'array' | 'null' | 'mixed'
+  nullable: boolean
+}
+
+// FlatRow: 扁平化后的行数据, key 为 dot-notation 列名
+type FlatRow = Record<string, unknown> & {
+  _index: number        // 原始行号 (0-based)
+  _error?: string       // 仅错误行有值, 存原始文本
+}
 ```
 
 **Worker 内部流程：**
 
-- `LOAD_FILE`: Worker 内部用 `file.stream().getReader()` 逐块读取，每次喂给 Rust 1MB
-- `GET_ROWS`: 用 `file.slice(startByte, endByte)` 只取需要的字节，传给 Rust 解析
-- `SEARCH`: Rust 遍历已索引行，返回匹配行号
+1. 主线程先发 `INIT { fileSize }`，Worker 记录总大小用于进度计算
+2. 主线程发 `LOAD_FILE { file }`，Worker 内部用 `file.stream().getReader()` 逐块读取（每块 1MB），喂给 Rust `feed_chunk(chunk, bytesRead, totalSize)` 计算进度
+3. `GET_ROWS`: Worker 用 `file.slice(startByte, endByte)` 只取需要的字节，传给 Rust 解析
+4. `SEARCH`: Rust 遍历已索引行，返回匹配行号
 
 ### 5.4 React Hooks 封装
 
