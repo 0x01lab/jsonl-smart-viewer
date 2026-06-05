@@ -22,7 +22,4 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
-  optimizeDeps: {
-    exclude: ['/wasm/jsonl_wasm.js'],
-  },
 })

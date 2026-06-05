@@ -2,15 +2,21 @@ import * as Comlink from 'comlink'
 import type { WasmSchemaResult, WasmRow, JsonlEngine as JsonlEngineType } from '~/types/wasm'
 
 let engine: JsonlEngineType | null = null
+let wasmReady = false
+
+async function ensureWasm() {
+  if (wasmReady) return
+  const wasmModule = await import('~/wasm/jsonl_wasm.js')
+  await wasmModule.default()
+  wasmReady = true
+}
 
 const api = {
   async initFile(file: File): Promise<WasmSchemaResult> {
-    // Dynamic import from public/ — Vite serves /wasm/* at runtime.
-    // @ts-expect-error -- absolute public-path import not resolvable by tsc
-    const wasmModule = await import('/wasm/jsonl_wasm.js')
-    await wasmModule.default()
+    await ensureWasm()
 
-    engine = new wasmModule.JsonlEngine() as JsonlEngineType
+    const { JsonlEngine } = await import('~/wasm/jsonl_wasm.js')
+    engine = new JsonlEngine() as JsonlEngineType
     engine.set_total_size(file.size)
 
     const CHUNK_SIZE = 1024 * 1024
