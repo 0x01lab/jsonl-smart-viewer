@@ -1,1 +1,4 @@
 /target
+.superpowers/
+/node_modules
+app/public/wasm/

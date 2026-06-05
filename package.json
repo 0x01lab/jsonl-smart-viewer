@@ -1,0 +1,12 @@
+{
+  "name": "josnl-viewer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter app dev",
+    "build": "pnpm --filter app build",
+    "build:wasm": "cd crates/jsonl-wasm && wasm-pack build --target web --out-dir ../../app/public/wasm --out-name jsonl_wasm",
+    "lint": "pnpm --filter app lint",
+    "test": "pnpm --filter app test"
+  }
+}
