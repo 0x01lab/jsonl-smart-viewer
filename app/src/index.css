@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/* Fonts — Google Fonts CDN (Phase 2); optimize to self-hosted later */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+/*
+ * OKLCH Color Tokens — shadcn Nova Neutral base
+ */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.163 25.731);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+}
+
+/* JSONL Viewer extended tokens — Light */
+:root {
+  --table-row-even: oklch(1 0 0);
+  --table-row-odd: oklch(0.98 0 0);
+  --table-row-hover: oklch(0.96 0.01 270);
+  --table-row-selected: oklch(0.94 0.02 270);
+  --table-row-error: oklch(0.97 0.02 25);
+  --table-header-bg: oklch(0.97 0 0);
+  --table-grid-line: oklch(0.922 0 0);
+  --table-selected-indicator: oklch(0.45 0.18 270);
+  --color-success: oklch(0.65 0.2 160);
+  --color-warning: oklch(0.75 0.18 85);
+  --color-error: oklch(0.577 0.245 27.325);
+  --color-info: oklch(0.55 0.2 260);
+  --json-key: oklch(0.55 0.2 260);
+  --json-string: oklch(0.55 0.16 150);
+  --json-number: oklch(0.65 0.18 65);
+  --json-boolean: oklch(0.55 0.2 310);
+  --json-null: oklch(0.556 0 0);
+  --null-text: oklch(0.65 0 0);
+}
+
+/* JSONL Viewer extended tokens — Dark */
+.dark {
+  --table-row-even: oklch(0.145 0 0);
+  --table-row-odd: oklch(0.178 0 0);
+  --table-row-hover: oklch(0.22 0.02 270);
+  --table-row-selected: oklch(0.28 0.05 270);
+  --table-row-error: oklch(0.18 0.03 25);
+  --table-header-bg: oklch(0.178 0 0);
+  --table-grid-line: oklch(0.269 0 0);
+  --table-selected-indicator: oklch(0.55 0.2 270);
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+@theme {
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
