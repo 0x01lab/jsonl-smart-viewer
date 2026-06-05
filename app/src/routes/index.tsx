@@ -27,7 +27,15 @@ function HomePage() {
     const start = (currentPage - 1) * PAGE_SIZE
     const end = Math.min(start + PAGE_SIZE, fileInfo.totalRows)
 
-    getRows(start, end).then(setRows).catch((err) => {
+    getRows(start, end).then((data) => {
+      // Debug: log first row's raw data structure
+      if (data.length > 0) {
+        console.log('[DEBUG] First row:', JSON.stringify(data[0], null, 2))
+        console.log('[DEBUG] Schema columns:', fileInfo.schema.columns.map(c => c.key).join(', '))
+        console.log('[DEBUG] Data keys:', Object.keys(data[0].data || {}).join(', '))
+      }
+      setRows(data)
+    }).catch((err) => {
       toast.error(`加载行数据失败: ${err.message}`)
     })
   }, [status, file, fileInfo, currentPage, getRows])
