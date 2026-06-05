@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/jsonl-core", "crates/jsonl-wasm"]
+resolver = "2"
