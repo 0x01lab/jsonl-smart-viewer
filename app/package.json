@@ -10,12 +10,18 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@base-ui/react": "^1.5.0",
     "@tanstack/react-router": "^1.120.17",
     "@tanstack/react-start": "^1.120.17",
     "@tanstack/react-table": "^8.21.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "comlink": "^4.4.2",
+    "lucide-react": "^1.17.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
     "zod": "^3.25.42"
   },
   "devDependencies": {
