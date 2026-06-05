@@ -1,7 +1,7 @@
-@import "tailwindcss";
-
 /* Fonts — Google Fonts CDN (Phase 2); optimize to self-hosted later */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+@import "tailwindcss";
 
 /*
  * OKLCH Color Tokens — shadcn Nova Neutral base
