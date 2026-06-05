@@ -11,14 +11,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Intended Tech Stack
 
 - **Framework:** TanStack Start (React 19)
+- **UI Components:** shadcn/ui — Nova compact style (`base-nova`), initialized via `npx shadcn create`
 - **Table:** TanStack Table v8 (column model, sorting, filtering, visibility)
 - **Virtualization:** TanStack Virtual v3 (only 30-50 DOM rows rendered at once)
 - **Data caching:** TanStack Query (pagination, prefetching, GC eviction)
 - **Routing:** TanStack Router with `validateSearch` + Zod (URL-as-state)
 - **Backend/parsing:** Rust compiled to WASM, running in Web Workers
-- **Styling:** Tailwind CSS v4.0
-- **Icons:** Lucide Icons
+- **Styling:** Tailwind CSS v4 + shadcn Nova style (OKLCH color space, CSS variables)
+- **Icons:** Lucide Icons (shadcn default)
 - **Fonts:** JetBrains Mono (data cells), Inter (UI text)
+- **Theme:** `next-themes` (light / dark / system), persisted via localStorage
 - **Deployment:** Static site generation (SSG) — single HTML/JS/CSS/WASM bundle
 
 ## Architecture
@@ -45,7 +47,7 @@ Browser main thread                    Web Worker (background)
 ## Development Roadmap (from PRD)
 
 1. **Phase 1 (weeks 1-2):** Rust core parser + WASM compilation (`serde_json`/`simd-json`, `wasm-bindgen`)
-2. **Phase 2 (week 3):** TanStack Start scaffold, React 19 + Tailwind v4, typed routes with Zod, Worker bridge
+2. **Phase 2 (week 3):** TanStack Start scaffold via `npx shadcn create` (Nova style), React 19 + Tailwind v4 + shadcn/ui, typed routes with Zod, Worker bridge
 3. **Phase 3 (weeks 4-5):** TanStack Table/Virtual/Query integration, virtual scrolling, pagination cache
 4. **Phase 4 (week 6):** UI polish (detail drawer, JSON tree viewer), cross-browser testing, SSG build & deploy
 
@@ -58,14 +60,14 @@ Browser main thread                    Web Worker (background)
 
 ## UI Layout
 
-IDE-style three-panel layout (see `docs/UI_UX_SPEC.md` for full specs):
-- **Toolbar** (48px, top): filename, global search (`Cmd/Ctrl+F`), filter tags, export, theme toggle
-- **Left Schema Panel** (240px, collapsible): field checkboxes with type badges, sort/filter controls
+IDE-style three-panel layout with shadcn Nova compact style (see `docs/UI_UX_SPEC.md` for full specs):
+- **Toolbar** (40px, top): filename, global search (`Cmd/Ctrl+F`), filter tags, export, theme toggle
+- **Left Schema Panel** (220px, collapsible): field checkboxes with type badges, sort/filter controls
 - **Center Data Grid**: sticky header, virtualized rows, zebra striping, type-aware cell rendering
-- **Right Detail Drawer** (400px, slide-in): JSON tree view with syntax coloring, copy/format buttons
-- **Status Bar** (32px, bottom): row counts, pagination, selected row, load time, memory estimate
+- **Right Detail Drawer** (380px, slide-in): JSON tree view with syntax coloring, copy/format buttons
+- **Status Bar** (28px, bottom): row counts, pagination, selected row, load time, memory estimate
 
 ## Documentation
 
 - `docs/PRD.md` — Full product requirements (Chinese), architecture diagrams, performance KPIs
-- `docs/UI_UX_SPEC.md` — Detailed UI spec (Chinese): color palette, typography, spacing, cell rendering rules, keyboard shortcuts, animations, accessibility
+- `docs/UI_UX_SPEC.md` — Detailed UI spec (Chinese): shadcn Nova component mapping, OKLCH color tokens, compact spacing, cell rendering rules, keyboard shortcuts, animations, accessibility

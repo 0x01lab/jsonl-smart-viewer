@@ -3,7 +3,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { FileDropZone } from '~/components/file-drop-zone'
 import { DataTable } from '~/components/data-table'
 import { useJsonlWorker } from '~/worker/use-jsonl-worker'
-import { Toaster, toast } from '~/components/ui/sonner'
+import { Toaster } from '~/components/ui/sonner'
+import { toast } from 'sonner'
 import type { WasmRow } from '~/types/wasm'
 
 export const Route = createFileRoute('/')({

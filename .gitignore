@@ -2,3 +2,4 @@
 .superpowers/
 node_modules
 app/public/wasm/
+app/src/routeTree.gen.ts

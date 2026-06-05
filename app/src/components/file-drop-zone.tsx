@@ -91,7 +91,7 @@ export function FileDropZone({ onFile, loading, error }: FileDropZoneProps) {
 
         {loading && (
           <div className="mt-6 max-w-xs mx-auto">
-            <Progress value={undefined} className="h-1.5" />
+            <Progress value={null} className="h-1.5" />
             <p className="mt-2 text-xs text-muted-foreground">正在扫描...</p>
           </div>
         )}
