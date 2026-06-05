@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use jsonl_core::{types as core_types, NewlineScanner, RowParser, SchemaExtractor};
 use wasm_bindgen::prelude::*;
-use jsonl_core::{NewlineScanner, SchemaExtractor, RowParser, types as core_types};
 
 /// WASM-facing column definition
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -50,6 +50,12 @@ pub struct JsonlEngine {
     total_rows: u32,
     error_rows: u32,
     raw_data: Vec<u8>,
+}
+
+impl Default for JsonlEngine {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[wasm_bindgen]

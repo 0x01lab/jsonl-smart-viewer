@@ -220,11 +220,19 @@ mod tests {
         assert_eq!(scanner.bytes_processed(), 5);
         // Progress should be 0.05
         let diff = (scanner.progress() - 0.05).abs();
-        assert!(diff < f64::EPSILON, "progress should be 0.05, got {}", scanner.progress());
+        assert!(
+            diff < f64::EPSILON,
+            "progress should be 0.05, got {}",
+            scanner.progress()
+        );
 
         scanner.feed_chunk(&[0u8; 45]); // 45 more bytes = 50 total
         let diff = (scanner.progress() - 0.5).abs();
-        assert!(diff < f64::EPSILON, "progress should be 0.5, got {}", scanner.progress());
+        assert!(
+            diff < f64::EPSILON,
+            "progress should be 0.5, got {}",
+            scanner.progress()
+        );
     }
 
     #[test]
@@ -234,7 +242,12 @@ mod tests {
             r#"{"name":"Bob","age":25,"city":"NYC"}"#,
             r#"{"name":"Charlie","age":35,"active":true}"#,
         ];
-        let content = lines.iter().map(|l| l.to_string()).collect::<Vec<_>>().join("\n") + "\n";
+        let content = lines
+            .iter()
+            .map(|l| l.to_string())
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n";
         let bytes = content.as_bytes();
 
         let mut scanner = NewlineScanner::new(bytes.len() as u64);
@@ -250,12 +263,16 @@ mod tests {
         assert_eq!(offsets[1].start, lines[0].len() as u64 + 1); // +1 for '\n'
         assert_eq!(offsets[1].len, lines[1].len() as u32);
 
-        assert_eq!(offsets[2].start, offsets[1].start + lines[1].len() as u64 + 1);
+        assert_eq!(
+            offsets[2].start,
+            offsets[1].start + lines[1].len() as u64 + 1
+        );
         assert_eq!(offsets[2].len, lines[2].len() as u32);
 
         // Verify we can reconstruct the original lines from offsets
         for (i, offset) in offsets.iter().enumerate() {
-            let line_bytes = &bytes[offset.start as usize..(offset.start + offset.len as u64) as usize];
+            let line_bytes =
+                &bytes[offset.start as usize..(offset.start + offset.len as u64) as usize];
             let line_str = std::str::from_utf8(line_bytes).unwrap();
             assert_eq!(line_str, lines[i]);
         }

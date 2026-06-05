@@ -206,9 +206,6 @@ mod tests {
 
         assert_eq!(row.index, 5);
         assert!(row.data.is_empty());
-        assert_eq!(
-            row.error.as_deref(),
-            Some("invalid JSON at byte 1234")
-        );
+        assert_eq!(row.error.as_deref(), Some("invalid JSON at byte 1234"));
     }
 }

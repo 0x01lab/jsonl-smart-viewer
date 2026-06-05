@@ -1,12 +1,11 @@
-use jsonl_core::*;
 use jsonl_core::types;
+use jsonl_core::*;
 use std::collections::HashSet;
 
 /// Read a test fixture file from tests/fixtures/{name}.
 fn read_fixture(name: &str) -> Vec<u8> {
     let path = format!("tests/fixtures/{}", name);
-    std::fs::read(&path)
-        .unwrap_or_else(|e| panic!("failed to read fixture '{}': {}", path, e))
+    std::fs::read(&path).unwrap_or_else(|e| panic!("failed to read fixture '{}': {}", path, e))
 }
 
 /// Scan all lines from raw bytes and return line offsets.
@@ -18,10 +17,7 @@ fn scan_all(data: &[u8]) -> Vec<types::LineOffset> {
 
 /// Extract schema from the given data using the provided offsets.
 /// Returns the schema and the set of line indices that failed to parse.
-fn extract_schema(
-    data: &[u8],
-    offsets: &[types::LineOffset],
-) -> (types::Schema, HashSet<u32>) {
+fn extract_schema(data: &[u8], offsets: &[types::LineOffset]) -> (types::Schema, HashSet<u32>) {
     let mut extractor = SchemaExtractor::new();
     let mut error_lines = HashSet::new();
 
@@ -50,7 +46,11 @@ fn test_simple_jsonl_end_to_end() {
 
     // Extract schema — should have 4 columns, no error lines
     let (schema, error_lines) = extract_schema(&data, &offsets);
-    assert!(error_lines.is_empty(), "expected no error lines, got {:?}", error_lines);
+    assert!(
+        error_lines.is_empty(),
+        "expected no error lines, got {:?}",
+        error_lines
+    );
 
     let keys = schema.column_keys();
     assert_eq!(keys.len(), 4);
@@ -71,23 +71,38 @@ fn test_simple_jsonl_end_to_end() {
     // Row 0: Alice
     assert!(rows[0].error.is_none());
     assert_eq!(rows[0].data.get("id").unwrap(), &serde_json::json!(1));
-    assert_eq!(rows[0].data.get("name").unwrap(), &serde_json::json!("Alice"));
+    assert_eq!(
+        rows[0].data.get("name").unwrap(),
+        &serde_json::json!("Alice")
+    );
     assert_eq!(rows[0].data.get("age").unwrap(), &serde_json::json!(30));
-    assert_eq!(rows[0].data.get("active").unwrap(), &serde_json::json!(true));
+    assert_eq!(
+        rows[0].data.get("active").unwrap(),
+        &serde_json::json!(true)
+    );
 
     // Row 1: Bob
     assert!(rows[1].error.is_none());
     assert_eq!(rows[1].data.get("id").unwrap(), &serde_json::json!(2));
     assert_eq!(rows[1].data.get("name").unwrap(), &serde_json::json!("Bob"));
     assert_eq!(rows[1].data.get("age").unwrap(), &serde_json::json!(25));
-    assert_eq!(rows[1].data.get("active").unwrap(), &serde_json::json!(false));
+    assert_eq!(
+        rows[1].data.get("active").unwrap(),
+        &serde_json::json!(false)
+    );
 
     // Row 2: Charlie
     assert!(rows[2].error.is_none());
     assert_eq!(rows[2].data.get("id").unwrap(), &serde_json::json!(3));
-    assert_eq!(rows[2].data.get("name").unwrap(), &serde_json::json!("Charlie"));
+    assert_eq!(
+        rows[2].data.get("name").unwrap(),
+        &serde_json::json!("Charlie")
+    );
     assert_eq!(rows[2].data.get("age").unwrap(), &serde_json::json!(35));
-    assert_eq!(rows[2].data.get("active").unwrap(), &serde_json::json!(true));
+    assert_eq!(
+        rows[2].data.get("active").unwrap(),
+        &serde_json::json!(true)
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +118,11 @@ fn test_heterogeneous_jsonl_end_to_end() {
 
     // Extract schema
     let (schema, error_lines) = extract_schema(&data, &offsets);
-    assert!(error_lines.is_empty(), "expected no error lines, got {:?}", error_lines);
+    assert!(
+        error_lines.is_empty(),
+        "expected no error lines, got {:?}",
+        error_lines
+    );
 
     let keys = schema.column_keys();
     // Should have at least 7 columns:
@@ -119,8 +138,14 @@ fn test_heterogeneous_jsonl_end_to_end() {
     assert!(keys.contains(&"id"), "missing column 'id'");
     assert!(keys.contains(&"name"), "missing column 'name'");
     assert!(keys.contains(&"email"), "missing column 'email'");
-    assert!(keys.contains(&"address.city"), "missing column 'address.city'");
-    assert!(keys.contains(&"address.zip"), "missing column 'address.zip'");
+    assert!(
+        keys.contains(&"address.city"),
+        "missing column 'address.city'"
+    );
+    assert!(
+        keys.contains(&"address.zip"),
+        "missing column 'address.zip'"
+    );
     assert!(keys.contains(&"age"), "missing column 'age'");
     assert!(keys.contains(&"tags"), "missing column 'tags'");
 
@@ -134,7 +159,10 @@ fn test_heterogeneous_jsonl_end_to_end() {
     // Row 0 (Alice): has id, name, email, address.city, address.zip — missing age, tags
     assert!(rows[0].error.is_none());
     assert_eq!(rows[0].data.get("id").unwrap(), &serde_json::json!(1));
-    assert_eq!(rows[0].data.get("name").unwrap(), &serde_json::json!("Alice"));
+    assert_eq!(
+        rows[0].data.get("name").unwrap(),
+        &serde_json::json!("Alice")
+    );
     assert_eq!(
         rows[0].data.get("address.city").unwrap(),
         &serde_json::json!("Shanghai")
@@ -225,14 +253,14 @@ fn test_with_errors_jsonl_end_to_end() {
     // Row 0 (valid): {"id":1,"name":"Alice"}
     assert!(rows[0].error.is_none());
     assert_eq!(rows[0].data.get("id").unwrap(), &serde_json::json!(1));
-    assert_eq!(rows[0].data.get("name").unwrap(), &serde_json::json!("Alice"));
+    assert_eq!(
+        rows[0].data.get("name").unwrap(),
+        &serde_json::json!("Alice")
+    );
 
     // Row 1 (invalid): {invalid json
     assert!(rows[1].error.is_some());
-    assert!(
-        rows[1].data.is_empty(),
-        "error row should have empty data"
-    );
+    assert!(rows[1].data.is_empty(), "error row should have empty data");
     assert!(
         rows[1].error.as_deref().unwrap().contains("invalid"),
         "error text should contain original line content"
@@ -265,7 +293,10 @@ fn test_with_errors_jsonl_end_to_end() {
     // Row 5 (valid): {"id":6,"name":"Frank"}
     assert!(rows[5].error.is_none());
     assert_eq!(rows[5].data.get("id").unwrap(), &serde_json::json!(6));
-    assert_eq!(rows[5].data.get("name").unwrap(), &serde_json::json!("Frank"));
+    assert_eq!(
+        rows[5].data.get("name").unwrap(),
+        &serde_json::json!("Frank")
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -291,5 +322,8 @@ fn test_parse_specific_range() {
     assert_eq!(rows[0].data.get("id").unwrap(), &serde_json::json!(2));
     assert_eq!(rows[0].data.get("name").unwrap(), &serde_json::json!("Bob"));
     assert_eq!(rows[0].data.get("age").unwrap(), &serde_json::json!(25));
-    assert_eq!(rows[0].data.get("active").unwrap(), &serde_json::json!(false));
+    assert_eq!(
+        rows[0].data.get("active").unwrap(),
+        &serde_json::json!(false)
+    );
 }

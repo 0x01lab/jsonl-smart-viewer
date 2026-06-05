@@ -63,10 +63,7 @@ impl<'a> RowParser<'a> {
                 return Err(FlatRow {
                     index: line_num,
                     data: HashMap::new(),
-                    error: Some(format!(
-                        "UTF-8 decode error at line {}",
-                        line_num
-                    )),
+                    error: Some(format!("UTF-8 decode error at line {}", line_num)),
                 });
             }
         };
@@ -95,14 +92,11 @@ impl<'a> RowParser<'a> {
 fn flatten_to_map(value: &serde_json::Value) -> HashMap<String, serde_json::Value> {
     let mut map = HashMap::new();
 
-    match value {
-        serde_json::Value::Object(obj) => {
-            for (key, child) in obj {
-                flatten_value_into(key, child, &mut map);
-            }
+    // Non-object root values: skip (nothing to flatten into columns)
+    if let serde_json::Value::Object(obj) = value {
+        for (key, child) in obj {
+            flatten_value_into(key, child, &mut map);
         }
-        // Non-object root values: skip (nothing to flatten into columns)
-        _ => {}
     }
 
     map
@@ -270,10 +264,7 @@ mod tests {
             rows[0].data.get("address.city").unwrap(),
             &json!("Shanghai")
         );
-        assert_eq!(
-            rows[0].data.get("address.zip").unwrap(),
-            &json!("200000")
-        );
+        assert_eq!(rows[0].data.get("address.zip").unwrap(), &json!("200000"));
     }
 
     #[test]
