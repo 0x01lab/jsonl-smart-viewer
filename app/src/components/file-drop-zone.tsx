@@ -61,7 +61,7 @@ export function FileDropZone({ onFile, loading, error }: FileDropZoneProps) {
           `}
         >
           <p className="text-sm text-muted-foreground mb-4">
-            拖拽 JSONL 文件到此处
+            Drop JSONL files here
           </p>
 
           <Button
@@ -72,7 +72,7 @@ export function FileDropZone({ onFile, loading, error }: FileDropZoneProps) {
               inputRef.current?.click()
             }}
           >
-            📂 选择文件
+            📂 Choose File
           </Button>
 
           <input
@@ -81,18 +81,18 @@ export function FileDropZone({ onFile, loading, error }: FileDropZoneProps) {
             accept=".jsonl,.json,.log,.jsonl.gz"
             onChange={handleInputChange}
             className="hidden"
-            aria-label="选择文件"
+            aria-label="Choose file"
           />
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground">
-          支持: .jsonl / .json / .jsonl.gz &nbsp;·&nbsp; 100% 本地解析 · 隐私安全
+          Supported: .jsonl / .json / .jsonl.gz &nbsp;·&nbsp; 100% local parsing · Privacy first
         </p>
 
         {loading && (
           <div className="mt-6 max-w-xs mx-auto">
             <Progress value={null} className="h-1.5" />
-            <p className="mt-2 text-xs text-muted-foreground">正在扫描...</p>
+            <p className="mt-2 text-xs text-muted-foreground">Scanning...</p>
           </div>
         )}
 

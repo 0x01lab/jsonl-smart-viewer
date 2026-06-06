@@ -5,15 +5,15 @@ import { FileDropZone } from './file-drop-zone'
 describe('FileDropZone', () => {
   it('renders drop zone with file input', () => {
     render(<FileDropZone onFile={vi.fn()} />)
-    expect(screen.getByText(/拖拽/i)).toBeInTheDocument()
-    expect(screen.getByText(/选择文件/i)).toBeInTheDocument()
+    expect(screen.getByText(/drop/i)).toBeInTheDocument()
+    expect(screen.getByText(/choose file/i)).toBeInTheDocument()
   })
 
   it('calls onFile when a file is selected via input', () => {
     const onFile = vi.fn()
     render(<FileDropZone onFile={onFile} />)
     const file = new File(['{"id":1}'], 'test.jsonl')
-    const input = screen.getByLabelText(/选择文件/i) as HTMLInputElement
+    const input = screen.getByLabelText(/choose file/i) as HTMLInputElement
     fireEvent.change(input, { target: { files: [file] } })
     expect(onFile).toHaveBeenCalledWith(file)
   })
@@ -22,7 +22,7 @@ describe('FileDropZone', () => {
     const onFile = vi.fn()
     render(<FileDropZone onFile={onFile} />)
     const file = new File(['{"id":1}'], 'test.jsonl')
-    const dropZone = screen.getByText(/拖拽/i).closest('div')!
+    const dropZone = screen.getByText(/drop/i).closest('div')!
     const dropEvent = new Event('drop', { bubbles: true })
     Object.defineProperty(dropEvent, 'dataTransfer', { value: { files: [file] } })
     dropZone.dispatchEvent(dropEvent)
@@ -31,6 +31,6 @@ describe('FileDropZone', () => {
 
   it('shows loading state', () => {
     render(<FileDropZone onFile={vi.fn()} loading />)
-    expect(screen.getByText(/正在扫描/i)).toBeInTheDocument()
+    expect(screen.getByText(/scanning/i)).toBeInTheDocument()
   })
 })

@@ -26,10 +26,10 @@ export function StatusBar({
   return (
     <div className="flex h-7 items-center justify-between border-t border-[var(--table-grid-line)] bg-[var(--table-header-bg)] px-3 text-xs text-muted-foreground font-sans">
       <div className="flex items-center gap-3">
-        <span>📊 共 {totalRows.toLocaleString()} 行</span>
+        <span>📊 {totalRows.toLocaleString()} rows</span>
         {errorRows > 0 && (
           <span className="text-[var(--color-error)]">
-            ⚠ 错误: {errorRows} 行
+            ⚠ Errors: {errorRows}
           </span>
         )}
         {memoryEstimateMB !== undefined && (
@@ -63,7 +63,7 @@ export function StatusBar({
           </>
         )}
         {selectedRowIndex !== null && (
-          <span>选中: #{selectedRowIndex + 1}</span>
+          <span>Selected: #{selectedRowIndex + 1}</span>
         )}
         {loadTimeMs !== undefined && <span>⏱ {loadTimeMs}ms</span>}
       </div>

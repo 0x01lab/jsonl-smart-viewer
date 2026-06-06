@@ -179,11 +179,11 @@ export function VirtualDataTable({
       <div ref={scrollRef} className="flex-1 overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-            加载中...
+            Loading...
           </div>
         ) : tableRows.length === 0 ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-            无数据
+            No data
           </div>
         ) : (
           <div style={{ width: totalWidth, minWidth: '100%' }}>
