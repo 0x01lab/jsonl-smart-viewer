@@ -1,51 +1,45 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { FileDropZone } from '~/components/file-drop-zone'
-import { DataTable } from '~/components/data-table'
+import { VirtualDataTable } from '~/components/virtual-data-table'
+import { SchemaPanel } from '~/components/schema-panel'
+import { Toolbar } from '~/components/toolbar'
+import { StatusBar } from '~/components/status-bar'
 import { useJsonlWorker } from '~/worker/use-jsonl-worker'
+import { useTableState } from '~/hooks/use-table-state'
 import { Toaster } from '~/components/ui/sonner'
 import { toast } from 'sonner'
-import type { WasmRow } from '~/types/wasm'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
 })
 
-const PAGE_SIZE = 100
-
 function HomePage() {
-  const { status, fileInfo, error, loadFile, getRows, reset } = useJsonlWorker()
+  const { status, fileInfo, fileId, error, loadFile, getRows, reset } =
+    useJsonlWorker()
   const [file, setFile] = useState<File | null>(null)
-  const [rows, setRows] = useState<WasmRow[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedRow, setSelectedRow] = useState<number | null>(null)
 
-  // Load rows when page changes or file is first loaded
-  useEffect(() => {
-    if (status !== 'ready' || !file || !fileInfo) return
+  const columnIds = fileInfo
+    ? fileInfo.schema.columns.map((c) => c.key)
+    : []
 
-    const start = (currentPage - 1) * PAGE_SIZE
-    const end = Math.min(start + PAGE_SIZE, fileInfo.totalRows)
-
-    getRows(start, end).then((data) => {
-      // Debug: log first row's raw data structure
-      if (data.length > 0) {
-        console.log('[DEBUG] First row:', JSON.stringify(data[0], null, 2))
-        console.log('[DEBUG] Schema columns:', fileInfo.schema.columns.map(c => c.key).join(', '))
-        console.log('[DEBUG] Data keys:', Object.keys(data[0].data || {}).join(', '))
-      }
-      setRows(data)
-    }).catch((err) => {
-      toast.error(`加载行数据失败: ${err.message}`)
-    })
-  }, [status, file, fileInfo, currentPage, getRows])
+  const {
+    sorting,
+    columnFilters,
+    columnVisibility,
+    columnOrder,
+    selectedRowIndex,
+    onSortingChange,
+    onColumnFiltersChange,
+    onColumnVisibilityChange,
+    onColumnOrderChange,
+    onSelectedRowChange,
+  } = useTableState({ columnIds })
 
   const handleFile = useCallback(
     async (newFile: File) => {
       setFile(newFile)
-      setCurrentPage(1)
-      setSelectedRow(null)
-      setRows([])
+      onSelectedRowChange(null)
 
       try {
         await loadFile(newFile)
@@ -56,17 +50,23 @@ function HomePage() {
         )
       }
     },
-    [loadFile],
+    [loadFile, onSelectedRowChange],
   )
 
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page)
-    setSelectedRow(null)
-  }, [])
+  const handleReset = useCallback(() => {
+    reset()
+    setFile(null)
+  }, [reset])
 
-  const handleRowSelect = useCallback((index: number | null) => {
-    setSelectedRow(index)
-  }, [])
+  const handleVisibilityChange = useCallback(
+    (columnId: string, visible: boolean) => {
+      onColumnVisibilityChange((prev) => ({
+        ...prev,
+        [columnId]: visible,
+      }))
+    },
+    [onColumnVisibilityChange],
+  )
 
   if (status !== 'ready' || !fileInfo) {
     return (
@@ -84,19 +84,48 @@ function HomePage() {
   return (
     <>
       <Toaster />
-      <DataTable
-        schema={fileInfo.schema}
-        rows={rows}
-        totalRows={fileInfo.totalRows}
-        errorRows={fileInfo.errorRows}
-        fileName={file?.name ?? 'unknown.jsonl'}
-        fileSize={file?.size ?? 0}
-        currentPage={currentPage}
-        pageSize={PAGE_SIZE}
-        selectedRowIndex={selectedRow}
-        onPageChange={handlePageChange}
-        onRowSelect={handleRowSelect}
-      />
+      <div className="flex h-screen flex-col">
+        <Toolbar
+          fileName={file?.name ?? 'unknown.jsonl'}
+          fileSize={file?.size ?? 0}
+          columnCount={fileInfo.schema.columns.length}
+          onReset={handleReset}
+        />
+
+        <div className="flex flex-1 overflow-hidden">
+          <SchemaPanel
+            columns={fileInfo.schema.columns}
+            columnVisibility={columnVisibility}
+            columnOrder={columnOrder}
+            onVisibilityChange={handleVisibilityChange}
+            onOrderChange={onColumnOrderChange}
+          />
+
+          <VirtualDataTable
+            schema={fileInfo.schema}
+            totalRows={fileInfo.totalRows}
+            fileId={fileId!}
+            getRows={getRows}
+            sorting={sorting}
+            columnFilters={columnFilters}
+            columnVisibility={columnVisibility}
+            columnOrder={columnOrder}
+            selectedRowIndex={selectedRowIndex}
+            onSortingChange={onSortingChange}
+            onColumnFiltersChange={onColumnFiltersChange}
+            onColumnVisibilityChange={onColumnVisibilityChange}
+            onColumnOrderChange={onColumnOrderChange}
+            onSelectedRowChange={onSelectedRowChange}
+          />
+        </div>
+
+        <StatusBar
+          totalRows={fileInfo.totalRows}
+          errorRows={fileInfo.errorRows}
+          visibleRows={fileInfo.totalRows}
+          selectedRowIndex={selectedRowIndex}
+        />
+      </div>
     </>
   )
 }
