@@ -34,6 +34,11 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
   const search = routerState.location.search as Record<string, unknown>
 
   // --- Parse URL state ---
+  const page: number = useMemo(() => {
+    const val = search.page
+    return typeof val === 'number' && val > 0 ? val : 1
+  }, [search.page])
+
   const sorting: SortingState = useMemo(
     () => parseSortBy(search.sortBy as string | undefined),
     [search.sortBy],
@@ -76,6 +81,13 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
       })
     },
     [navigate],
+  )
+
+  const onPageChange = useCallback(
+    (newPage: number) => {
+      updateUrl({ page: newPage > 1 ? newPage : undefined, selectedRow: undefined })
+    },
+    [updateUrl],
   )
 
   const onSortingChange = useCallback(
@@ -144,11 +156,13 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
   )
 
   return {
+    page,
     sorting,
     columnFilters,
     columnVisibility,
     columnOrder,
     selectedRowIndex,
+    onPageChange,
     onSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange,

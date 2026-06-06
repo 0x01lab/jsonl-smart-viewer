@@ -8,9 +8,9 @@ export const tableStateSchema = z.object({
   filter: z.string().optional(),
   /** Visible columns: "col1,col2,col3" */
   cols: z.string().optional(),
-  /** Virtual scroll offset in pixels */
-  scrollOffset: z.number().optional(),
-  /** Selected row index (zero-based) */
+  /** Current page number (1-based) */
+  page: z.number().optional(),
+  /** Selected row index (zero-based, global) */
   selectedRow: z.number().optional(),
 })
 

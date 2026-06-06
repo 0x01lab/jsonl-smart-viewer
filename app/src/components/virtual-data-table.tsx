@@ -1,5 +1,4 @@
 import { useMemo, useCallback, useRef, useEffect } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,17 +10,20 @@ import {
   type ColumnFiltersState,
   type VisibilityState,
 } from '@tanstack/react-table'
+import { useQuery } from '@tanstack/react-query'
 import { ColumnHeader } from '~/components/column-header'
 import { FilterPopover } from '~/components/filter-popover'
 import { CellRenderer } from '~/components/cell-renderer'
-import { useVirtualRows, ROW_HEIGHT } from '~/hooks/use-virtual-rows'
 import { useColumnResize } from '~/hooks/use-column-resize'
 import type { WasmSchemaResult, WasmRow } from '~/types/wasm'
+
+const PAGE_SIZE = 50
 
 interface VirtualDataTableProps {
   schema: WasmSchemaResult
   totalRows: number
   fileId: string
+  page: number
   getRows: (start: number, end: number) => Promise<WasmRow[]>
   sorting: SortingState
   columnFilters: ColumnFiltersState
@@ -49,6 +51,7 @@ export function VirtualDataTable({
   schema,
   totalRows,
   fileId,
+  page,
   getRows,
   sorting,
   columnFilters,
@@ -74,6 +77,19 @@ export function VirtualDataTable({
     scrollEl.addEventListener('scroll', handleScroll, { passive: true })
     return () => scrollEl.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Fetch current page data
+  const start = (page - 1) * PAGE_SIZE
+  const end = Math.min(start + PAGE_SIZE, totalRows)
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ['rows', fileId, page],
+    queryFn: () => getRows(start, end),
+    enabled: !!fileId && start < totalRows,
+    staleTime: Infinity,
+    gcTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  })
 
   // Build column definitions
   const columns = useMemo<ColumnDef<WasmRow>[]>(() => {
@@ -105,7 +121,7 @@ export function VirtualDataTable({
 
   // TanStack Table instance
   const table = useReactTable({
-    data: [],
+    data: rows,
     columns,
     state: {
       sorting,
@@ -122,31 +138,6 @@ export function VirtualDataTable({
     enableMultiSort: true,
     manualPagination: true,
     pageCount: -1,
-  })
-
-  // Calculate total width of all visible columns
-  const totalWidth = useMemo(() => {
-    return table.getVisibleLeafColumns().reduce((sum, col) => {
-      return sum + col.getSize()
-    }, 0)
-  }, [table])
-
-  // Virtual scrolling
-  const virtualizer = useVirtualizer({
-    count: totalRows,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: 5,
-  })
-
-  const virtualItems = virtualizer.getVirtualItems()
-
-  // Data fetching via TanStack Query (chunk-based caching)
-  const { rows } = useVirtualRows({
-    fileId,
-    totalRows,
-    getRows,
-    virtualItems,
   })
 
   // Column resize handler
@@ -224,6 +215,12 @@ export function VirtualDataTable({
 
   const headerGroups = table.getHeaderGroups()
   const headers = headerGroups[0]?.headers ?? []
+  const tableRows = table.getRowModel().rows
+
+  // Calculate total width
+  const totalWidth = useMemo(() => {
+    return table.getVisibleLeafColumns().reduce((sum, col) => sum + col.getSize(), 0)
+  }, [table])
 
   return (
     <div
@@ -231,11 +228,10 @@ export function VirtualDataTable({
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      {/* Header — sticky at top, synced horizontal scroll with body */}
+      {/* Header — synced horizontal scroll */}
       <div
         ref={headerScrollRef}
         className="shrink-0 overflow-hidden bg-[var(--table-header-bg)] border-b border-[var(--table-grid-line)]"
-        style={{ width: '100%' }}
       >
         <div style={{ width: totalWidth, minWidth: '100%' }}>
           <div className="flex">
@@ -312,114 +308,71 @@ export function VirtualDataTable({
         </div>
       </div>
 
-      {/* Virtual scrolling body — handles both vertical and horizontal scroll */}
+      {/* Table body — regular rendering, overflow scroll for both axes */}
       <div ref={scrollRef} className="flex-1 overflow-auto">
-        <div
-          style={{
-            height: virtualizer.getTotalSize(),
-            width: totalWidth,
-            minWidth: '100%',
-            position: 'relative',
-          }}
-        >
-          {virtualItems.map((virtualRow) => {
-            const rowData = rows.get(virtualRow.index)
-            const isError = rowData?.error != null
-            const isSelected = virtualRow.index === selectedRowIndex
-            const isOdd = virtualRow.index % 2 === 1
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+            加载中...
+          </div>
+        ) : tableRows.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+            无匹配行
+          </div>
+        ) : (
+          <div style={{ width: totalWidth, minWidth: '100%' }}>
+            {tableRows.map((row) => {
+              const isError = !!row.original.error
+              const isSelected = row.original.index === selectedRowIndex
+              const isOdd = row.original.index % 2 === 1
 
-            const bgColor = isError
-              ? '#ef444418'
-              : isSelected
-                ? '#3b82f622'
-                : isOdd
-                  ? 'var(--table-row-odd)'
-                  : 'var(--table-row-even)'
+              const bgColor = isError
+                ? '#ef444418'
+                : isSelected
+                  ? '#3b82f622'
+                  : isOdd
+                    ? 'var(--table-row-odd)'
+                    : 'var(--table-row-even)'
 
-            return (
-              <div
-                key={virtualRow.key}
-                data-index={virtualRow.index}
-                style={{
-                  position: 'absolute',
-                  top: virtualRow.start,
-                  left: 0,
-                  width: '100%',
-                  height: ROW_HEIGHT,
-                }}
-                className="flex items-center border-b border-[var(--table-grid-line)] font-mono text-[13px] cursor-pointer hover:bg-[var(--table-row-hover)]"
-                onClick={() => handleRowClick(virtualRow.index)}
-              >
-                {rowData ? (
-                  headers.map((header) => {
-                    const colId = header.column.id
-                    const width = header.getSize()
+              return (
+                <div
+                  key={row.id}
+                  className="flex items-center border-b border-[var(--table-grid-line)] font-mono text-[13px] cursor-pointer hover:bg-[var(--table-row-hover)]"
+                  style={{ height: 32, background: bgColor }}
+                  onClick={() => handleRowClick(row.original.index)}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const colId = cell.column.id
+                    const width = colId === '#' ? 52 : cell.column.getSize()
 
                     if (isError && colId !== '#') {
                       return (
                         <div
-                          key={header.id}
+                          key={cell.id}
                           className="px-2 shrink-0 overflow-hidden"
-                          style={{
-                            width,
-                            minWidth: colId === '#' ? 52 : 40,
-                          }}
+                          style={{ width, minWidth: colId === '#' ? 52 : 40 }}
                         >
                           <span className="text-xs text-[var(--color-error)] italic truncate block">
-                            {rowData.error}
+                            {row.original.error}
                           </span>
-                        </div>
-                      )
-                    }
-
-                    if (colId === '#') {
-                      return (
-                        <div
-                          key={header.id}
-                          className="px-2 shrink-0 text-muted-foreground text-xs"
-                          style={{ width: 52, minWidth: 52 }}
-                        >
-                          {virtualRow.index + 1}
                         </div>
                       )
                     }
 
                     return (
                       <div
-                        key={header.id}
+                        key={cell.id}
                         className="px-2 shrink-0 overflow-hidden"
-                        style={{ width, minWidth: 40 }}
+                        style={{ width, minWidth: colId === '#' ? 52 : 40 }}
                       >
-                        <span className="truncate block">
-                          <CellRenderer value={rowData.data[colId]} />
-                        </span>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </div>
                     )
-                  })
-                ) : (
-                  headers.map((header) => (
-                    <div
-                      key={header.id}
-                      className="px-2 shrink-0"
-                      style={{
-                        width:
-                          header.column.id === '#' ? 52 : header.getSize(),
-                        minWidth: header.column.id === '#' ? 52 : 40,
-                      }}
-                    >
-                      <div className="h-3 bg-muted/30 rounded animate-pulse" />
-                    </div>
-                  ))
-                )}
-
-                <div
-                  className="absolute inset-0 -z-10"
-                  style={{ background: bgColor }}
-                />
-              </div>
-            )
-          })}
-        </div>
+                  })}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

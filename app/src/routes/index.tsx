@@ -24,11 +24,13 @@ function HomePage() {
     : []
 
   const {
+    page,
     sorting,
     columnFilters,
     columnVisibility,
     columnOrder,
     selectedRowIndex,
+    onPageChange,
     onSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange,
@@ -105,6 +107,7 @@ function HomePage() {
             schema={fileInfo.schema}
             totalRows={fileInfo.totalRows}
             fileId={fileId!}
+            page={page}
             getRows={getRows}
             sorting={sorting}
             columnFilters={columnFilters}
@@ -122,8 +125,9 @@ function HomePage() {
         <StatusBar
           totalRows={fileInfo.totalRows}
           errorRows={fileInfo.errorRows}
-          visibleRows={fileInfo.totalRows}
+          page={page}
           selectedRowIndex={selectedRowIndex}
+          onPageChange={onPageChange}
         />
       </div>
     </>
