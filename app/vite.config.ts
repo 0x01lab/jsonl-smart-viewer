@@ -5,6 +5,9 @@ import viteReact from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
+  // GitHub Pages: serves at /jsonl-smart-viewer/
+  // Override with VITE_BASE_URL env var if needed
+  base: process.env.VITE_BASE_URL || '/',
   server: {
     port: 3000,
   },

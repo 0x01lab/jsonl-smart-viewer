@@ -3,4 +3,5 @@
 app/public/wasm/
 app/src/routeTree.gen.ts
 app/src/wasm/
+app/dist/
 node_modules
