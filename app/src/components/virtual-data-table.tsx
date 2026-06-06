@@ -4,12 +4,10 @@ import {
   getCoreRowModel,
   flexRender,
   type ColumnDef,
-  type ColumnFiltersState,
   type VisibilityState,
 } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
 import { ColumnHeader } from '~/components/column-header'
-import { FilterPopover } from '~/components/filter-popover'
 import { CellRenderer } from '~/components/cell-renderer'
 import { useColumnResize } from '~/hooks/use-column-resize'
 import type { WasmSchemaResult, WasmRow } from '~/types/wasm'
@@ -22,15 +20,9 @@ interface VirtualDataTableProps {
   fileId: string
   page: number
   getRows: (start: number, end: number) => Promise<WasmRow[]>
-  columnFilters: ColumnFiltersState
   columnVisibility: VisibilityState
   columnOrder: string[]
   selectedRowIndex: number | null
-  onColumnFiltersChange: (
-    updaterOrValue:
-      | ColumnFiltersState
-      | ((old: ColumnFiltersState) => ColumnFiltersState),
-  ) => void
   onColumnVisibilityChange: (
     updaterOrValue:
       | VisibilityState
@@ -46,11 +38,10 @@ export function VirtualDataTable({
   fileId,
   page,
   getRows,
-  columnFilters,
   columnVisibility,
   columnOrder,
   selectedRowIndex,
-  onColumnFiltersChange,
+  onColumnVisibilityChange,
   onSelectedRowChange,
 }: VirtualDataTableProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -114,18 +105,14 @@ export function VirtualDataTable({
     data: rows,
     columns,
     state: {
-      columnFilters,
       columnVisibility,
       columnOrder,
     },
-    onColumnFiltersChange,
+    onColumnVisibilityChange,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: undefined,
-    manualPagination: true,
-    pageCount: -1,
   })
 
-  // Column resize handler
+  // Column resize handler (RAF-optimized)
   const { handleResizeStart, handleDoubleClick } = useColumnResize({ table })
 
   // Row click handler
@@ -155,8 +142,6 @@ export function VirtualDataTable({
             {headers.map((header) => {
               const colId = header.column.id
               const isRowNum = colId === '#'
-              const colDef = schema.columns.find((c) => c.key === colId)
-              const filterState = columnFilters.find((f) => f.id === colId)
               const width = header.getSize()
 
               return (
@@ -168,48 +153,21 @@ export function VirtualDataTable({
                     minWidth: isRowNum ? 52 : 40,
                   }}
                 >
-                  <div className="flex items-center">
-                    <div className="flex-1">
-                      <ColumnHeader
-                        columnId={colId}
-                        header={
-                          isRowNum
-                            ? '#'
-                            : (flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              ) as string)
-                        }
-                        width={width}
-                        isRowNum={isRowNum}
-                        onResizeStart={handleResizeStart}
-                        onResizeDoubleClick={handleDoubleClick}
-                      />
-                    </div>
-                    {!isRowNum && colDef && (
-                      <div className="pr-1">
-                        <FilterPopover
-                          columnType={colDef.inferred_type}
-                          currentValue={
-                            filterState ? String(filterState.value) : ''
-                          }
-                          onApply={(value) => {
-                            const newFilters = columnFilters.filter(
-                              (f) => f.id !== colId,
-                            )
-                            newFilters.push({ id: colId, value })
-                            onColumnFiltersChange(newFilters)
-                          }}
-                          onClear={() => {
-                            const newFilters = columnFilters.filter(
-                              (f) => f.id !== colId,
-                            )
-                            onColumnFiltersChange(newFilters)
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  <ColumnHeader
+                    columnId={colId}
+                    header={
+                      isRowNum
+                        ? '#'
+                        : (flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          ) as string)
+                    }
+                    width={width}
+                    isRowNum={isRowNum}
+                    onResizeStart={handleResizeStart}
+                    onResizeDoubleClick={handleDoubleClick}
+                  />
                 </div>
               )
             })}
@@ -225,7 +183,7 @@ export function VirtualDataTable({
           </div>
         ) : tableRows.length === 0 ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-            无匹配行
+            无数据
           </div>
         ) : (
           <div style={{ width: totalWidth, minWidth: '100%' }}>

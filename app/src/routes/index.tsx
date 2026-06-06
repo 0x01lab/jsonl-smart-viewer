@@ -26,11 +26,9 @@ function HomePage() {
 
   const {
     page,
-    columnFilters,
     columnVisibility,
     columnOrder,
     onPageChange,
-    onColumnFiltersChange,
     onColumnVisibilityChange,
     onColumnOrderChange,
   } = useTableState({ columnIds })
@@ -115,11 +113,9 @@ function HomePage() {
             fileId={fileId!}
             page={page}
             getRows={getRows}
-            columnFilters={columnFilters}
             columnVisibility={columnVisibility}
             columnOrder={columnOrder}
             selectedRowIndex={selectedRow}
-            onColumnFiltersChange={onColumnFiltersChange}
             onColumnVisibilityChange={onColumnVisibilityChange}
             onColumnOrderChange={onColumnOrderChange}
             onSelectedRowChange={setSelectedRow}

@@ -9,33 +9,44 @@ interface UseColumnResizeOptions {
 }
 
 export function useColumnResize({ table }: UseColumnResizeOptions) {
-  const isResizing = useRef(false)
-  const resizingColumnId = useRef<string | null>(null)
-  const startX = useRef(0)
-  const startWidth = useRef(0)
+  const rafId = useRef<number | null>(null)
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent, columnId: string, currentWidth: number) => {
       e.preventDefault()
       e.stopPropagation()
-      isResizing.current = true
-      resizingColumnId.current = columnId
-      startX.current = e.clientX
-      startWidth.current = currentWidth
+
+      const startX = e.clientX
+      const startWidth = currentWidth
+
+      // Set cursor during resize
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
-        if (!isResizing.current) return
-        const diff = moveEvent.clientX - startX.current
-        const newWidth = Math.max(MIN_COLUMN_WIDTH, startWidth.current + diff)
-        table.setColumnSizing((prev) => ({
-          ...prev,
-          [resizingColumnId.current!]: newWidth,
-        }))
+        // Cancel previous frame if pending
+        if (rafId.current !== null) {
+          cancelAnimationFrame(rafId.current)
+        }
+
+        const targetX = moveEvent.clientX
+        rafId.current = requestAnimationFrame(() => {
+          const diff = targetX - startX
+          const newWidth = Math.max(MIN_COLUMN_WIDTH, startWidth + diff)
+          table.setColumnSizing((prev) => ({
+            ...prev,
+            [columnId]: newWidth,
+          }))
+        })
       }
 
       const handleMouseUp = () => {
-        isResizing.current = false
-        resizingColumnId.current = null
+        if (rafId.current !== null) {
+          cancelAnimationFrame(rafId.current)
+          rafId.current = null
+        }
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
       }

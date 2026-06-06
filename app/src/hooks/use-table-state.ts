@@ -1,15 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import {
-  type ColumnFiltersState,
-  type VisibilityState,
-} from '@tanstack/react-table'
-import {
-  parseFilter,
-  serializeFilter,
-  parseCols,
-  serializeCols,
-} from '~/types/table-state'
+import { type VisibilityState } from '@tanstack/react-table'
+import { parseCols, serializeCols } from '~/types/table-state'
 
 interface UseTableStateOptions {
   columnIds: string[]
@@ -32,11 +24,6 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
     const val = search.page
     return typeof val === 'number' && val > 0 ? val : 1
   }, [search.page])
-
-  const columnFilters: ColumnFiltersState = useMemo(() => {
-    const parsed = parseFilter(search.filter as string | undefined)
-    return Object.entries(parsed).map(([id, value]) => ({ id, value }))
-  }, [search.filter])
 
   const columnVisibility: VisibilityState = useMemo(() => {
     const cols = parseCols(search.cols as string | undefined)
@@ -73,25 +60,6 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
     [updateUrl],
   )
 
-  const onColumnFiltersChange = useCallback(
-    (
-      updaterOrValue:
-        | ColumnFiltersState
-        | ((old: ColumnFiltersState) => ColumnFiltersState),
-    ) => {
-      const newFilters =
-        typeof updaterOrValue === 'function'
-          ? updaterOrValue(columnFilters)
-          : updaterOrValue
-      const filterMap: Record<string, string> = {}
-      for (const f of newFilters) {
-        filterMap[f.id] = String(f.value)
-      }
-      updateUrl({ filter: serializeFilter(filterMap) })
-    },
-    [columnFilters, updateUrl],
-  )
-
   const onColumnVisibilityChange = useCallback(
     (
       updaterOrValue:
@@ -122,11 +90,9 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
 
   return {
     page,
-    columnFilters,
     columnVisibility,
     columnOrder,
     onPageChange,
-    onColumnFiltersChange,
     onColumnVisibilityChange,
     onColumnOrderChange,
   } as const
