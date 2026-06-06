@@ -1,16 +1,10 @@
 import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { VirtualItem } from '@tanstack/react-virtual'
 import type { WasmRow } from '~/types/wasm'
 
 const ROW_HEIGHT = 32
 const OVERSCAN = 5
-
-interface VirtualItem {
-  index: number
-  start: number
-  size: number
-  key: string
-}
 
 interface UseVirtualRowsOptions {
   /** Unique file identifier (filename + size) */

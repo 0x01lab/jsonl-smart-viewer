@@ -1,10 +1,11 @@
 import { useCallback, useRef } from 'react'
 import type { Table } from '@tanstack/react-table'
+import type { WasmRow } from '~/types/wasm'
 
 const MIN_COLUMN_WIDTH = 40
 
 interface UseColumnResizeOptions {
-  table: Table<unknown>
+  table: Table<WasmRow>
 }
 
 export function useColumnResize({ table }: UseColumnResizeOptions) {
