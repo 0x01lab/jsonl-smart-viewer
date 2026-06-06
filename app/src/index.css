@@ -81,6 +81,12 @@
   --table-header-bg: oklch(0.178 0 0);
   --table-grid-line: oklch(0.269 0 0);
   --table-selected-indicator: oklch(0.55 0.2 270);
+  --json-key: oklch(0.72 0.18 270);
+  --json-string: oklch(0.72 0.14 150);
+  --json-number: oklch(0.78 0.16 65);
+  --json-boolean: oklch(0.72 0.18 310);
+  --json-null: oklch(0.6 0 0);
+  --null-text: oklch(0.55 0 0);
 }
 
 body {
