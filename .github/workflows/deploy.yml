@@ -20,6 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # --- Node.js & pnpm (install early, needed by build:wasm script) ---
+      - uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
       # --- Rust & WASM ---
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -40,19 +49,10 @@ jobs:
       - name: Build WASM
         run: pnpm build:wasm
 
-      # --- Node.js & pnpm ---
-      - uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
+      # --- Build ---
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # --- Build ---
       - name: Build app
         env:
           VITE_BASE_URL: /jsonl-smart-viewer/
