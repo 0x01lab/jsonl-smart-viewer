@@ -27,7 +27,7 @@ export function Toolbar({
           📄 {fileName}
         </Button>
         <span className="text-xs text-muted-foreground">
-          ({formatFileSize(fileSize)}) · {columnCount} 列
+          ({formatFileSize(fileSize)}) · {columnCount} columns
         </span>
       </div>
       <div className="flex items-center gap-2">
@@ -38,7 +38,7 @@ export function Toolbar({
           disabled
         >
           <Search className="h-3.5 w-3.5" />
-          搜索
+          Search
           <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px] font-mono">
             ⌘F
           </kbd>

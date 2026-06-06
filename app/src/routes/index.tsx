@@ -54,7 +54,7 @@ function DetailPanelContent({
   if (!selectedRowData) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        加载中...
+        Loading...
       </div>
     )
   }
@@ -108,10 +108,10 @@ function HomePage() {
 
       try {
         await loadFile(newFile)
-        toast.success('文件加载完成')
+        toast.success('File loaded successfully')
       } catch (err) {
         toast.error(
-          `加载失败: ${err instanceof Error ? err.message : '未知错误'}`,
+          `Load failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
         )
       }
     },

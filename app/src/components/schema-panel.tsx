@@ -174,7 +174,7 @@ export function SchemaPanel({
         <button
           className="text-xs text-muted-foreground hover:text-foreground"
           onClick={() => setCollapsed(false)}
-          title="展开 Schema 面板"
+          title="Expand Schema panel"
         >
           ▶
         </button>
@@ -188,12 +188,12 @@ export function SchemaPanel({
         <span className="font-semibold text-xs">Schema</span>
         <div className="flex items-center gap-1">
           <span className="text-[11px] text-muted-foreground">
-            {columns.length} 字段
+            {columns.length} fields
           </span>
           <button
             className="text-xs text-muted-foreground hover:text-foreground ml-1"
             onClick={() => setCollapsed(true)}
-            title="收起"
+            title="Collapse"
           >
             ◀
           </button>
@@ -204,7 +204,7 @@ export function SchemaPanel({
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
           <Input
-            placeholder="搜索字段..."
+            placeholder="Search fields..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-6 pl-7 text-xs"
