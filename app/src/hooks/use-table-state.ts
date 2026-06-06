@@ -15,11 +15,9 @@ import {
 } from '~/types/table-state'
 
 interface UseTableStateOptions {
-  /** All column IDs from the schema */
   columnIds: string[]
 }
 
-/** Default visibility = all visible */
 function defaultVisibility(columnIds: string[]): VisibilityState {
   const vis: VisibilityState = {}
   for (const id of columnIds) {
@@ -33,7 +31,6 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
   const routerState = useRouterState()
   const search = routerState.location.search as Record<string, unknown>
 
-  // --- Parse URL state ---
   const page: number = useMemo(() => {
     const val = search.page
     return typeof val === 'number' && val > 0 ? val : 1
@@ -63,12 +60,6 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
     return [...columnIds]
   }, [columnIds])
 
-  const selectedRowIndex: number | null = useMemo(() => {
-    const val = search.selectedRow
-    return typeof val === 'number' ? val : null
-  }, [search.selectedRow])
-
-  // --- URL update helpers ---
   const updateUrl = useCallback(
     (params: Record<string, string | number | undefined>) => {
       void navigate({
@@ -85,7 +76,7 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
 
   const onPageChange = useCallback(
     (newPage: number) => {
-      updateUrl({ page: newPage > 1 ? newPage : undefined, selectedRow: undefined })
+      updateUrl({ page: newPage > 1 ? newPage : undefined })
     },
     [updateUrl],
   )
@@ -148,25 +139,16 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
     [columnVisibility, updateUrl],
   )
 
-  const onSelectedRowChange = useCallback(
-    (index: number | null) => {
-      updateUrl({ selectedRow: index ?? undefined })
-    },
-    [updateUrl],
-  )
-
   return {
     page,
     sorting,
     columnFilters,
     columnVisibility,
     columnOrder,
-    selectedRowIndex,
     onPageChange,
     onSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange,
     onColumnOrderChange,
-    onSelectedRowChange,
   } as const
 }

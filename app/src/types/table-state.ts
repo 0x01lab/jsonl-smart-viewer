@@ -10,8 +10,6 @@ export const tableStateSchema = z.object({
   cols: z.string().optional(),
   /** Current page number (1-based) */
   page: z.number().optional(),
-  /** Selected row index (zero-based, global) */
-  selectedRow: z.number().optional(),
 })
 
 export type TableStateSchema = z.infer<typeof tableStateSchema>

@@ -18,6 +18,7 @@ function HomePage() {
   const { status, fileInfo, fileId, error, loadFile, getRows, reset } =
     useJsonlWorker()
   const [file, setFile] = useState<File | null>(null)
+  const [selectedRow, setSelectedRow] = useState<number | null>(null)
 
   const columnIds = fileInfo
     ? fileInfo.schema.columns.map((c) => c.key)
@@ -29,19 +30,17 @@ function HomePage() {
     columnFilters,
     columnVisibility,
     columnOrder,
-    selectedRowIndex,
     onPageChange,
     onSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange,
     onColumnOrderChange,
-    onSelectedRowChange,
   } = useTableState({ columnIds })
 
   const handleFile = useCallback(
     async (newFile: File) => {
       setFile(newFile)
-      onSelectedRowChange(null)
+      setSelectedRow(null)
 
       try {
         await loadFile(newFile)
@@ -52,12 +51,13 @@ function HomePage() {
         )
       }
     },
-    [loadFile, onSelectedRowChange],
+    [loadFile],
   )
 
   const handleReset = useCallback(() => {
     reset()
     setFile(null)
+    setSelectedRow(null)
   }, [reset])
 
   const handleVisibilityChange = useCallback(
@@ -68,6 +68,14 @@ function HomePage() {
       }))
     },
     [onColumnVisibilityChange],
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      onPageChange(newPage)
+      setSelectedRow(null)
+    },
+    [onPageChange],
   )
 
   if (status !== 'ready' || !fileInfo) {
@@ -113,12 +121,12 @@ function HomePage() {
             columnFilters={columnFilters}
             columnVisibility={columnVisibility}
             columnOrder={columnOrder}
-            selectedRowIndex={selectedRowIndex}
+            selectedRowIndex={selectedRow}
             onSortingChange={onSortingChange}
             onColumnFiltersChange={onColumnFiltersChange}
             onColumnVisibilityChange={onColumnVisibilityChange}
             onColumnOrderChange={onColumnOrderChange}
-            onSelectedRowChange={onSelectedRowChange}
+            onSelectedRowChange={setSelectedRow}
           />
         </div>
 
@@ -126,8 +134,8 @@ function HomePage() {
           totalRows={fileInfo.totalRows}
           errorRows={fileInfo.errorRows}
           page={page}
-          selectedRowIndex={selectedRowIndex}
-          onPageChange={onPageChange}
+          selectedRowIndex={selectedRow}
+          onPageChange={handlePageChange}
         />
       </div>
     </>
