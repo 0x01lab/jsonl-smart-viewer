@@ -68,6 +68,10 @@ impl<'a> RowParser<'a> {
             }
         };
 
+        // Strip trailing \r — the scanner only splits on \n, so CRLF (\r\n)
+        // line endings leave a \r in the line text which breaks JSON parsing.
+        let line_text = line_text.trim_end_matches('\r');
+
         match serde_json::from_str::<serde_json::Value>(line_text) {
             Ok(value) => {
                 let map = flatten_to_map(&value);
@@ -282,6 +286,57 @@ mod tests {
         let map = flatten_to_map(&value);
         assert_eq!(map.len(), 1);
         assert_eq!(map.get("a.b.c").unwrap(), &json!(42));
+    }
+
+    /// Regression test: CRLF (\r\n) line endings must not break parsing.
+    /// The scanner only splits on \n, so \r remains in the line text.
+    /// The parser must strip it before JSON decoding.
+    #[test]
+    fn test_parse_crlf_line_endings() {
+        let lines: [&str; 3] = [
+            r#"{"id":1,"name":"Alice"}"#,
+            r#"{"id":2,"name":"Bob"}"#,
+            r#"{"id":3,"name":"Charlie"}"#,
+        ];
+
+        // Simulate a CRLF file: each line ends with \r\n
+        let content = lines
+            .iter()
+            .map(|l| format!("{}\r\n", l))
+            .collect::<String>();
+        let bytes = content.into_bytes();
+
+        // Build offsets as the scanner would: it only sees \n, so each line's
+        // byte range includes the trailing \r.
+        let mut offsets = Vec::new();
+        let mut pos: u64 = 0;
+        for line in &lines {
+            let len = (line.len() + 1) as u32; // +1 for the \r
+            offsets.push(LineOffset { start: pos, len });
+            pos += len as u64 + 1; // +1 for the \n
+        }
+
+        let line_index = LineIndex::new(offsets);
+        let schema = Schema::new();
+        let parser = RowParser::new(&line_index, &schema);
+
+        let rows = parser.parse_rows(&bytes, 0, 3);
+        assert_eq!(rows.len(), 3);
+
+        // All rows should parse successfully despite the trailing \r
+        for (i, row) in rows.iter().enumerate() {
+            assert!(row.error.is_none(), "row {} should not have error", i);
+            assert_eq!(
+                row.data.get("id").unwrap(),
+                &json!((i + 1) as u64),
+                "row {} id mismatch",
+                i
+            );
+        }
+
+        assert_eq!(rows[0].data.get("name").unwrap(), &json!("Alice"));
+        assert_eq!(rows[1].data.get("name").unwrap(), &json!("Bob"));
+        assert_eq!(rows[2].data.get("name").unwrap(), &json!("Charlie"));
     }
 
     #[test]

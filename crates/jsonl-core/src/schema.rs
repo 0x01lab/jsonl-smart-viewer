@@ -24,6 +24,9 @@ impl SchemaExtractor {
     /// Process a raw JSON line string. Returns `true` if the line was valid JSON,
     /// `false` if it could not be parsed.
     pub fn process_line(&mut self, line: &str) -> bool {
+        // Strip trailing \r — the scanner only splits on \n, so CRLF (\r\n)
+        // line endings leave a \r in the line text which breaks JSON parsing.
+        let line = line.trim_end_matches('\r');
         match serde_json::from_str::<Value>(line) {
             Ok(value) => {
                 self.process_value(&value);
@@ -373,5 +376,23 @@ mod tests {
 
         // Each row introduces one new key in order: a, b, c
         assert_eq!(keys, vec!["a", "b", "c"]);
+    }
+
+    /// Regression test: CRLF (\r\n) line endings must not break schema extraction.
+    /// The scanner only splits on \n, so \r remains in the line text passed
+    /// to process_line(). The extractor must strip it before JSON decoding.
+    #[test]
+    fn test_schema_crlf_line_endings() {
+        let mut extractor = SchemaExtractor::new();
+
+        // Simulate lines with trailing \r (as scanner would produce from CRLF files)
+        assert!(extractor.process_line("{\"id\":1,\"name\":\"Alice\"}\r"));
+        assert!(extractor.process_line("{\"id\":2,\"name\":\"Bob\"}\r"));
+
+        assert_eq!(extractor.column_count(), 2);
+        let schema = extractor.into_schema();
+        let keys = schema.column_keys();
+        assert!(keys.contains(&"id"));
+        assert!(keys.contains(&"name"));
     }
 }
