@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef } from 'react'
+import { useMemo, useCallback, useRef, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   useReactTable,
@@ -60,6 +60,20 @@ export function VirtualDataTable({
   onSelectedRowChange,
 }: VirtualDataTableProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const headerScrollRef = useRef<HTMLDivElement>(null)
+
+  // Sync header horizontal scroll with body scroll
+  useEffect(() => {
+    const scrollEl = scrollRef.current
+    const headerEl = headerScrollRef.current
+    if (!scrollEl || !headerEl) return
+
+    const handleScroll = () => {
+      headerEl.scrollLeft = scrollEl.scrollLeft
+    }
+    scrollEl.addEventListener('scroll', handleScroll, { passive: true })
+    return () => scrollEl.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Build column definitions
   const columns = useMemo<ColumnDef<WasmRow>[]>(() => {
@@ -110,6 +124,13 @@ export function VirtualDataTable({
     pageCount: -1,
   })
 
+  // Calculate total width of all visible columns
+  const totalWidth = useMemo(() => {
+    return table.getVisibleLeafColumns().reduce((sum, col) => {
+      return sum + col.getSize()
+    }, 0)
+  }, [table])
+
   // Virtual scrolling
   const virtualizer = useVirtualizer({
     count: totalRows,
@@ -120,8 +141,8 @@ export function VirtualDataTable({
 
   const virtualItems = virtualizer.getVirtualItems()
 
-  // Data fetching via TanStack Query
-  const { rows, isLoading } = useVirtualRows({
+  // Data fetching via TanStack Query (chunk-based caching)
+  const { rows } = useVirtualRows({
     fileId,
     totalRows,
     getRows,
@@ -202,6 +223,7 @@ export function VirtualDataTable({
   )
 
   const headerGroups = table.getHeaderGroups()
+  const headers = headerGroups[0]?.headers ?? []
 
   return (
     <div
@@ -209,100 +231,97 @@ export function VirtualDataTable({
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      {/* Sticky header */}
-      <div className="flex bg-[var(--table-header-bg)] border-b border-[var(--table-grid-line)] shrink-0">
-        {headerGroups[0]?.headers.map((header) => {
-          const colId = header.column.id
-          const isRowNum = colId === '#'
-          const colDef = schema.columns.find((c) => c.key === colId)
-          const sortState = sorting.find((s) => s.id === colId)
-          const filterState = columnFilters.find((f) => f.id === colId)
-          const width = header.getSize()
+      {/* Header — sticky at top, synced horizontal scroll with body */}
+      <div
+        ref={headerScrollRef}
+        className="shrink-0 overflow-hidden bg-[var(--table-header-bg)] border-b border-[var(--table-grid-line)]"
+        style={{ width: '100%' }}
+      >
+        <div style={{ width: totalWidth, minWidth: '100%' }}>
+          <div className="flex">
+            {headers.map((header) => {
+              const colId = header.column.id
+              const isRowNum = colId === '#'
+              const colDef = schema.columns.find((c) => c.key === colId)
+              const sortState = sorting.find((s) => s.id === colId)
+              const filterState = columnFilters.find((f) => f.id === colId)
+              const width = header.getSize()
 
-          return (
-            <div
-              key={header.id}
-              className="border-r border-[var(--table-grid-line)] last:border-r-0 shrink-0"
-              style={{
-                width: isRowNum ? 52 : width,
-                minWidth: isRowNum ? 52 : 40,
-              }}
-            >
-              <div className="flex items-center">
-                <div className="flex-1">
-                  <ColumnHeader
-                    columnId={colId}
-                    header={
-                      isRowNum
-                        ? '#'
-                        : (flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          ) as string)
-                    }
-                    sortDirection={sortState ? sortState.desc : undefined}
-                    sortIndex={
-                      sorting.length > 1 && sortState
-                        ? sorting.indexOf(sortState)
-                        : undefined
-                    }
-                    width={width}
-                    isRowNum={isRowNum}
-                    onSortToggle={handleSortToggle}
-                    onResizeStart={handleResizeStart}
-                    onResizeDoubleClick={handleDoubleClick}
-                  />
-                </div>
-                {!isRowNum && colDef && (
-                  <div className="pr-1">
-                    <FilterPopover
-                      columnType={colDef.inferred_type}
-                      currentValue={
-                        filterState ? String(filterState.value) : ''
-                      }
-                      onApply={(value) => {
-                        const newFilters = columnFilters.filter(
-                          (f) => f.id !== colId,
-                        )
-                        newFilters.push({ id: colId, value })
-                        onColumnFiltersChange(newFilters)
-                      }}
-                      onClear={() => {
-                        const newFilters = columnFilters.filter(
-                          (f) => f.id !== colId,
-                        )
-                        onColumnFiltersChange(newFilters)
-                      }}
-                    />
+              return (
+                <div
+                  key={header.id}
+                  className="border-r border-[var(--table-grid-line)] last:border-r-0 shrink-0"
+                  style={{
+                    width: isRowNum ? 52 : width,
+                    minWidth: isRowNum ? 52 : 40,
+                  }}
+                >
+                  <div className="flex items-center">
+                    <div className="flex-1">
+                      <ColumnHeader
+                        columnId={colId}
+                        header={
+                          isRowNum
+                            ? '#'
+                            : (flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              ) as string)
+                        }
+                        sortDirection={sortState ? sortState.desc : undefined}
+                        sortIndex={
+                          sorting.length > 1 && sortState
+                            ? sorting.indexOf(sortState)
+                            : undefined
+                        }
+                        width={width}
+                        isRowNum={isRowNum}
+                        onSortToggle={handleSortToggle}
+                        onResizeStart={handleResizeStart}
+                        onResizeDoubleClick={handleDoubleClick}
+                      />
+                    </div>
+                    {!isRowNum && colDef && (
+                      <div className="pr-1">
+                        <FilterPopover
+                          columnType={colDef.inferred_type}
+                          currentValue={
+                            filterState ? String(filterState.value) : ''
+                          }
+                          onApply={(value) => {
+                            const newFilters = columnFilters.filter(
+                              (f) => f.id !== colId,
+                            )
+                            newFilters.push({ id: colId, value })
+                            onColumnFiltersChange(newFilters)
+                          }}
+                          onClear={() => {
+                            const newFilters = columnFilters.filter(
+                              (f) => f.id !== colId,
+                            )
+                            onColumnFiltersChange(newFilters)
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
+                </div>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
-      {/* Virtual scrolling body */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      {/* Virtual scrolling body — handles both vertical and horizontal scroll */}
+      <div ref={scrollRef} className="flex-1 overflow-auto">
         <div
           style={{
             height: virtualizer.getTotalSize(),
-            width: '100%',
+            width: totalWidth,
+            minWidth: '100%',
             position: 'relative',
           }}
         >
-          {virtualItems.length > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: virtualItems[0].start,
-              }}
-            />
-          )}
-
           {virtualItems.map((virtualRow) => {
             const rowData = rows.get(virtualRow.index)
             const isError = rowData?.error != null
@@ -332,9 +351,9 @@ export function VirtualDataTable({
                 onClick={() => handleRowClick(virtualRow.index)}
               >
                 {rowData ? (
-                  headerGroups[0]?.headers.map((header) => {
+                  headers.map((header) => {
                     const colId = header.column.id
-                    const width = colId === '#' ? 52 : header.getSize()
+                    const width = header.getSize()
 
                     if (isError && colId !== '#') {
                       return (
@@ -378,7 +397,7 @@ export function VirtualDataTable({
                     )
                   })
                 ) : (
-                  headerGroups[0]?.headers.map((header) => (
+                  headers.map((header) => (
                     <div
                       key={header.id}
                       className="px-2 shrink-0"

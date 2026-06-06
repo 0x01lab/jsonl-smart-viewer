@@ -1,20 +1,41 @@
-import { useMemo } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useRef } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import type { WasmRow } from '~/types/wasm'
 
 const ROW_HEIGHT = 32
 const OVERSCAN = 5
+/** Fixed chunk size for caching — prevents blank flashes on scroll */
+const CHUNK_SIZE = 100
 
 interface UseVirtualRowsOptions {
-  /** Unique file identifier (filename + size) */
   fileId: string | null
-  /** Total row count from the schema scan */
   totalRows: number
-  /** The getRows function from the worker API */
   getRows: (start: number, end: number) => Promise<WasmRow[]>
-  /** Virtual items from TanStack Virtual (the visible range) */
   virtualItems: VirtualItem[]
+}
+
+/** Convert a row index to a chunk index */
+function chunkOf(rowIndex: number): number {
+  return Math.floor(rowIndex / CHUNK_SIZE)
+}
+
+/** Get the set of unique chunk indices needed for the given virtual items */
+function getChunksNeeded(
+  virtualItems: VirtualItem[],
+  totalRows: number,
+): number[] {
+  if (virtualItems.length === 0) return []
+
+  const indices = virtualItems.map((v) => v.index)
+  const minIdx = Math.max(0, Math.min(...indices) - OVERSCAN)
+  const maxIdx = Math.min(totalRows - 1, Math.max(...indices) + OVERSCAN)
+
+  const chunks = new Set<number>()
+  for (let i = minIdx; i <= maxIdx; i++) {
+    chunks.add(chunkOf(i))
+  }
+  return Array.from(chunks).sort((a, b) => a - b)
 }
 
 export function useVirtualRows({
@@ -23,64 +44,59 @@ export function useVirtualRows({
   getRows,
   virtualItems,
 }: UseVirtualRowsOptions) {
-  const queryClient = useQueryClient()
+  // Track previous data to avoid blank flashes
+  const prevRowsRef = useRef<Map<number, WasmRow>>(new Map())
 
-  // Derive the actual row range from virtual items
-  const range = useMemo(() => {
-    if (virtualItems.length === 0) return null
-    const indices = virtualItems.map((v) => v.index)
-    const start = Math.max(0, Math.min(...indices) - OVERSCAN)
-    const end = Math.min(totalRows, Math.max(...indices) + OVERSCAN + 1)
-    return { start, end }
-  }, [virtualItems, totalRows])
+  const chunksNeeded = useMemo(
+    () => (fileId ? getChunksNeeded(virtualItems, totalRows) : []),
+    [fileId, virtualItems, totalRows],
+  )
 
-  // Query for the current visible range
-  const queryKey = fileId
-    ? ['rows', fileId, range?.start, range?.end]
-    : ['rows', 'no-file']
-
-  const query = useQuery({
-    queryKey,
-    queryFn: async () => {
-      if (!range || !fileId) return []
-      return getRows(range.start, range.end)
-    },
-    enabled: !!fileId && !!range,
-    staleTime: Infinity,
-    gcTime: 5 * 60 * 1000,
+  // One query per chunk — chunks are stable, so cached data persists across scrolls
+  const chunkQueries = useQueries({
+    queries: chunksNeeded.map((chunkIdx) => {
+      const start = chunkIdx * CHUNK_SIZE
+      const end = Math.min(start + CHUNK_SIZE, totalRows)
+      return {
+        queryKey: ['rows', fileId, chunkIdx],
+        queryFn: () => getRows(start, end),
+        staleTime: Infinity,
+        gcTime: 5 * 60 * 1000,
+        enabled: !!fileId,
+      }
+    }),
   })
 
-  // Prefetch the next range ahead
-  useMemo(() => {
-    if (!range || !fileId) return
-    const prefetchStart = Math.max(0, range.end)
-    const prefetchEnd = Math.min(totalRows, range.end + OVERSCAN * 2)
-    if (prefetchStart >= prefetchEnd) return
-
-    void queryClient.prefetchQuery({
-      queryKey: ['rows', fileId, prefetchStart, prefetchEnd],
-      queryFn: () => getRows(prefetchStart, prefetchEnd),
-      staleTime: Infinity,
-      gcTime: 5 * 60 * 1000,
-    })
-  }, [range, fileId, totalRows, getRows, queryClient])
-
-  // Map virtual items to actual row data
+  // Merge all chunk data into a single map
   const rows = useMemo(() => {
-    if (!query.data) return new Map<number, WasmRow>()
     const map = new Map<number, WasmRow>()
-    for (const row of query.data) {
-      map.set(row.index, row)
+
+    for (const result of chunkQueries) {
+      if (result.data) {
+        for (const row of result.data) {
+          map.set(row.index, row)
+        }
+      }
     }
-    return map
-  }, [query.data])
+
+    // If we got new data, update the ref
+    if (map.size > 0) {
+      prevRowsRef.current = map
+      return map
+    }
+
+    // Otherwise fall back to previous data to avoid blank flash
+    return prevRowsRef.current
+  }, [chunkQueries])
+
+  const isLoading = chunkQueries.some((q) => q.isLoading)
+  const isError = chunkQueries.some((q) => q.isError)
 
   return {
     rows,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
+    isLoading,
+    isError,
   } as const
 }
 
-export { ROW_HEIGHT, OVERSCAN }
+export { ROW_HEIGHT, OVERSCAN, CHUNK_SIZE }
