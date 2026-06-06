@@ -1,13 +1,10 @@
 import { useCallback, useMemo } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import {
-  type SortingState,
   type ColumnFiltersState,
   type VisibilityState,
 } from '@tanstack/react-table'
 import {
-  parseSortBy,
-  serializeSortBy,
   parseFilter,
   serializeFilter,
   parseCols,
@@ -35,11 +32,6 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
     const val = search.page
     return typeof val === 'number' && val > 0 ? val : 1
   }, [search.page])
-
-  const sorting: SortingState = useMemo(
-    () => parseSortBy(search.sortBy as string | undefined),
-    [search.sortBy],
-  )
 
   const columnFilters: ColumnFiltersState = useMemo(() => {
     const parsed = parseFilter(search.filter as string | undefined)
@@ -79,17 +71,6 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
       updateUrl({ page: newPage > 1 ? newPage : undefined })
     },
     [updateUrl],
-  )
-
-  const onSortingChange = useCallback(
-    (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
-      const newSorting =
-        typeof updaterOrValue === 'function'
-          ? updaterOrValue(sorting)
-          : updaterOrValue
-      updateUrl({ sortBy: serializeSortBy(newSorting) })
-    },
-    [sorting, updateUrl],
   )
 
   const onColumnFiltersChange = useCallback(
@@ -141,12 +122,10 @@ export function useTableState({ columnIds }: UseTableStateOptions) {
 
   return {
     page,
-    sorting,
     columnFilters,
     columnVisibility,
     columnOrder,
     onPageChange,
-    onSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange,
     onColumnOrderChange,

@@ -26,12 +26,10 @@ function HomePage() {
 
   const {
     page,
-    sorting,
     columnFilters,
     columnVisibility,
     columnOrder,
     onPageChange,
-    onSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange,
     onColumnOrderChange,
@@ -117,12 +115,10 @@ function HomePage() {
             fileId={fileId!}
             page={page}
             getRows={getRows}
-            sorting={sorting}
             columnFilters={columnFilters}
             columnVisibility={columnVisibility}
             columnOrder={columnOrder}
             selectedRowIndex={selectedRow}
-            onSortingChange={onSortingChange}
             onColumnFiltersChange={onColumnFiltersChange}
             onColumnVisibilityChange={onColumnVisibilityChange}
             onColumnOrderChange={onColumnOrderChange}

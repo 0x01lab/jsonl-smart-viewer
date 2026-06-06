@@ -2,8 +2,6 @@ import { z } from 'zod'
 
 /** URL search params schema for table state */
 export const tableStateSchema = z.object({
-  /** Sorting state: "col:asc,col2:desc" */
-  sortBy: z.string().optional(),
   /** Column filters: "col:op:value,col2:op:value" */
   filter: z.string().optional(),
   /** Visible columns: "col1,col2,col3" */
@@ -13,30 +11,6 @@ export const tableStateSchema = z.object({
 })
 
 export type TableStateSchema = z.infer<typeof tableStateSchema>
-
-/** Parse a sortBy string into TanStack Table SortingState */
-export function parseSortBy(sortBy: string | undefined): {
-  id: string
-  desc: boolean
-}[] {
-  if (!sortBy) return []
-  return sortBy
-    .split(',')
-    .filter(Boolean)
-    .map((part) => {
-      const [id, dir] = part.split(':')
-      return { id, desc: dir === 'desc' }
-    })
-    .filter((s) => s.id)
-}
-
-/** Serialize TanStack Table SortingState to URL string */
-export function serializeSortBy(
-  sorting: { id: string; desc: boolean }[],
-): string | undefined {
-  if (sorting.length === 0) return undefined
-  return sorting.map((s) => `${s.id}:${s.desc ? 'desc' : 'asc'}`).join(',')
-}
 
 /** Parse a filter string into column filter entries */
 export function parseFilter(

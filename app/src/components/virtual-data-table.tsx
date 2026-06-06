@@ -2,11 +2,8 @@ import { useMemo, useCallback, useRef, useEffect } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
   flexRender,
   type ColumnDef,
-  type SortingState,
   type ColumnFiltersState,
   type VisibilityState,
 } from '@tanstack/react-table'
@@ -25,14 +22,10 @@ interface VirtualDataTableProps {
   fileId: string
   page: number
   getRows: (start: number, end: number) => Promise<WasmRow[]>
-  sorting: SortingState
   columnFilters: ColumnFiltersState
   columnVisibility: VisibilityState
   columnOrder: string[]
   selectedRowIndex: number | null
-  onSortingChange: (
-    updaterOrValue: SortingState | ((old: SortingState) => SortingState),
-  ) => void
   onColumnFiltersChange: (
     updaterOrValue:
       | ColumnFiltersState
@@ -53,12 +46,10 @@ export function VirtualDataTable({
   fileId,
   page,
   getRows,
-  sorting,
   columnFilters,
   columnVisibility,
   columnOrder,
   selectedRowIndex,
-  onSortingChange,
   onColumnFiltersChange,
   onSelectedRowChange,
 }: VirtualDataTableProps) {
@@ -102,7 +93,6 @@ export function VirtualDataTable({
           {row.original.index + 1}
         </span>
       ),
-      enableSorting: false,
       enableResizing: false,
     }
     const dataCols: ColumnDef<WasmRow>[] = schema.columns.map((col) => ({
@@ -124,62 +114,19 @@ export function VirtualDataTable({
     data: rows,
     columns,
     state: {
-      sorting,
       columnFilters,
       columnVisibility,
       columnOrder,
     },
-    onSortingChange,
     onColumnFiltersChange,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    enableSortingRemoval: true,
-    enableMultiSort: true,
+    getFilteredRowModel: undefined,
     manualPagination: true,
     pageCount: -1,
   })
 
   // Column resize handler
   const { handleResizeStart, handleDoubleClick } = useColumnResize({ table })
-
-  // Sort toggle handler
-  const handleSortToggle = useCallback(
-    (columnId: string, shiftKey: boolean) => {
-      const column = table.getColumn(columnId)
-      if (!column) return
-
-      const currentSort = sorting.find((s) => s.id === columnId)
-      let newSorting: SortingState
-
-      if (shiftKey) {
-        if (currentSort) {
-          if (currentSort.desc) {
-            newSorting = sorting.filter((s) => s.id !== columnId)
-          } else {
-            newSorting = sorting.map((s) =>
-              s.id === columnId ? { ...s, desc: true } : s,
-            )
-          }
-        } else {
-          newSorting = [...sorting, { id: columnId, desc: false }]
-        }
-      } else {
-        if (currentSort) {
-          if (currentSort.desc) {
-            newSorting = []
-          } else {
-            newSorting = [{ id: columnId, desc: true }]
-          }
-        } else {
-          newSorting = [{ id: columnId, desc: false }]
-        }
-      }
-
-      onSortingChange(newSorting)
-    },
-    [sorting, table, onSortingChange],
-  )
 
   // Row click handler
   const handleRowClick = useCallback(
@@ -189,46 +136,16 @@ export function VirtualDataTable({
     [selectedRowIndex, onSelectedRowChange],
   )
 
-  // Keyboard navigation
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        const next =
-          selectedRowIndex === null
-            ? 0
-            : Math.min(selectedRowIndex + 1, totalRows - 1)
-        onSelectedRowChange(next)
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        const prev =
-          selectedRowIndex === null
-            ? 0
-            : Math.max(selectedRowIndex - 1, 0)
-        onSelectedRowChange(prev)
-      } else if (e.key === 'Escape') {
-        onSelectedRowChange(null)
-      }
-    },
-    [selectedRowIndex, totalRows, onSelectedRowChange],
-  )
-
-  const headerGroups = table.getHeaderGroups()
-  const headers = headerGroups[0]?.headers ?? []
+  const headers = table.getHeaderGroups()[0]?.headers ?? []
   const tableRows = table.getRowModel().rows
 
-  // Calculate total width
   const totalWidth = useMemo(() => {
     return table.getVisibleLeafColumns().reduce((sum, col) => sum + col.getSize(), 0)
   }, [table])
 
   return (
-    <div
-      className="flex-1 flex flex-col overflow-hidden"
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-    >
-      {/* Header — synced horizontal scroll */}
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Header */}
       <div
         ref={headerScrollRef}
         className="shrink-0 overflow-hidden bg-[var(--table-header-bg)] border-b border-[var(--table-grid-line)]"
@@ -239,7 +156,6 @@ export function VirtualDataTable({
               const colId = header.column.id
               const isRowNum = colId === '#'
               const colDef = schema.columns.find((c) => c.key === colId)
-              const sortState = sorting.find((s) => s.id === colId)
               const filterState = columnFilters.find((f) => f.id === colId)
               const width = header.getSize()
 
@@ -264,15 +180,8 @@ export function VirtualDataTable({
                                 header.getContext(),
                               ) as string)
                         }
-                        sortDirection={sortState ? sortState.desc : undefined}
-                        sortIndex={
-                          sorting.length > 1 && sortState
-                            ? sorting.indexOf(sortState)
-                            : undefined
-                        }
                         width={width}
                         isRowNum={isRowNum}
-                        onSortToggle={handleSortToggle}
                         onResizeStart={handleResizeStart}
                         onResizeDoubleClick={handleDoubleClick}
                       />
@@ -308,7 +217,7 @@ export function VirtualDataTable({
         </div>
       </div>
 
-      {/* Table body — regular rendering, overflow scroll for both axes */}
+      {/* Body */}
       <div ref={scrollRef} className="flex-1 overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
