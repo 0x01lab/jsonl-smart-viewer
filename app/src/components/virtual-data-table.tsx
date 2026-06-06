@@ -336,8 +336,8 @@ export function VirtualDataTable({
               return (
                 <div
                   key={row.id}
-                  className="flex items-center border-b border-[var(--table-grid-line)] font-mono text-[13px] cursor-pointer hover:bg-[var(--table-row-hover)]"
-                  style={{ height: 32, background: bgColor }}
+                  className="flex items-center border-b border-[var(--table-grid-line)] font-mono text-[13px] cursor-pointer hover:bg-[var(--table-row-hover)] overflow-hidden"
+                  style={{ height: 32, minHeight: 32, maxHeight: 32, background: bgColor }}
                   onClick={() => handleRowClick(row.original.index)}
                 >
                   {row.getVisibleCells().map((cell) => {
