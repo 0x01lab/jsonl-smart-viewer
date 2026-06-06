@@ -17,6 +17,7 @@ export function useJsonlWorker() {
   const [status, setStatus] = useState<WorkerStatus>('idle')
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [fileId, setFileId] = useState<string | null>(null)
 
   const loadFile = useCallback(async (file: File) => {
     setStatus('loading')
@@ -38,6 +39,7 @@ export function useJsonlWorker() {
         errorRows: result.error_rows,
         schema: result,
       })
+      setFileId(`${file.name}-${file.size}`)
       setStatus('ready')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
@@ -60,7 +62,8 @@ export function useJsonlWorker() {
     setStatus('idle')
     setFileInfo(null)
     setError(null)
+    setFileId(null)
   }, [])
 
-  return { status, fileInfo, error, loadFile, getRows, reset } as const
+  return { status, fileInfo, fileId, error, loadFile, getRows, reset } as const
 }

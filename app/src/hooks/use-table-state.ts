@@ -1,0 +1,158 @@
+import { useCallback, useMemo } from 'react'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
+import {
+  type SortingState,
+  type ColumnFiltersState,
+  type VisibilityState,
+} from '@tanstack/react-table'
+import {
+  parseSortBy,
+  serializeSortBy,
+  parseFilter,
+  serializeFilter,
+  parseCols,
+  serializeCols,
+} from '~/types/table-state'
+
+interface UseTableStateOptions {
+  /** All column IDs from the schema */
+  columnIds: string[]
+}
+
+/** Default visibility = all visible */
+function defaultVisibility(columnIds: string[]): VisibilityState {
+  const vis: VisibilityState = {}
+  for (const id of columnIds) {
+    vis[id] = true
+  }
+  return vis
+}
+
+export function useTableState({ columnIds }: UseTableStateOptions) {
+  const navigate = useNavigate()
+  const routerState = useRouterState()
+  const search = routerState.location.search as Record<string, unknown>
+
+  // --- Parse URL state ---
+  const sorting: SortingState = useMemo(
+    () => parseSortBy(search.sortBy as string | undefined),
+    [search.sortBy],
+  )
+
+  const columnFilters: ColumnFiltersState = useMemo(() => {
+    const parsed = parseFilter(search.filter as string | undefined)
+    return Object.entries(parsed).map(([id, value]) => ({ id, value }))
+  }, [search.filter])
+
+  const columnVisibility: VisibilityState = useMemo(() => {
+    const cols = parseCols(search.cols as string | undefined)
+    if (!cols) return defaultVisibility(columnIds)
+    const vis: VisibilityState = {}
+    for (const id of columnIds) {
+      vis[id] = cols.includes(id)
+    }
+    return vis
+  }, [search.cols, columnIds])
+
+  const columnOrder: string[] = useMemo(() => {
+    return [...columnIds]
+  }, [columnIds])
+
+  const selectedRowIndex: number | null = useMemo(() => {
+    const val = search.selectedRow
+    return typeof val === 'number' ? val : null
+  }, [search.selectedRow])
+
+  // --- URL update helpers ---
+  const updateUrl = useCallback(
+    (params: Record<string, string | number | undefined>) => {
+      void navigate({
+        to: '.',
+        search: (prev: Record<string, unknown>) => ({
+          ...prev,
+          ...params,
+        }),
+        replace: true,
+      })
+    },
+    [navigate],
+  )
+
+  const onSortingChange = useCallback(
+    (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
+      const newSorting =
+        typeof updaterOrValue === 'function'
+          ? updaterOrValue(sorting)
+          : updaterOrValue
+      updateUrl({ sortBy: serializeSortBy(newSorting) })
+    },
+    [sorting, updateUrl],
+  )
+
+  const onColumnFiltersChange = useCallback(
+    (
+      updaterOrValue:
+        | ColumnFiltersState
+        | ((old: ColumnFiltersState) => ColumnFiltersState),
+    ) => {
+      const newFilters =
+        typeof updaterOrValue === 'function'
+          ? updaterOrValue(columnFilters)
+          : updaterOrValue
+      const filterMap: Record<string, string> = {}
+      for (const f of newFilters) {
+        filterMap[f.id] = String(f.value)
+      }
+      updateUrl({ filter: serializeFilter(filterMap) })
+    },
+    [columnFilters, updateUrl],
+  )
+
+  const onColumnVisibilityChange = useCallback(
+    (
+      updaterOrValue:
+        | VisibilityState
+        | ((old: VisibilityState) => VisibilityState),
+    ) => {
+      const newVisibility =
+        typeof updaterOrValue === 'function'
+          ? updaterOrValue(columnVisibility)
+          : updaterOrValue
+      const visibleCols = columnIds.filter(
+        (id) => newVisibility[id] !== false,
+      )
+      updateUrl({ cols: serializeCols(visibleCols) })
+    },
+    [columnVisibility, columnIds, updateUrl],
+  )
+
+  const onColumnOrderChange = useCallback(
+    (newOrder: string[]) => {
+      const visibleCols = newOrder.filter(
+        (id) => columnVisibility[id] !== false,
+      )
+      updateUrl({ cols: serializeCols(visibleCols) })
+    },
+    [columnVisibility, updateUrl],
+  )
+
+  const onSelectedRowChange = useCallback(
+    (index: number | null) => {
+      updateUrl({ selectedRow: index ?? undefined })
+    },
+    [updateUrl],
+  )
+
+  return {
+    sorting,
+    columnFilters,
+    columnVisibility,
+    columnOrder,
+    selectedRowIndex,
+    onSortingChange,
+    onColumnFiltersChange,
+    onColumnVisibilityChange,
+    onColumnOrderChange,
+    onSelectedRowChange,
+  } as const
+}
