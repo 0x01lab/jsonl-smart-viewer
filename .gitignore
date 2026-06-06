@@ -1,6 +1,6 @@
-/target
 .superpowers/
-node_modules
+/target
 app/public/wasm/
-app/src/wasm/
 app/src/routeTree.gen.ts
+app/src/wasm/
+node_modules
